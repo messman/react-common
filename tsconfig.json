@@ -3,9 +3,10 @@
 		"module": "esnext",
 		"moduleResolution": "node",
 		"lib": [
+			"DOM",
 			"ES2019"
 		],
-		"target": "es2017",
+		"target": "ES2017",
 		"sourceMap": true,
 		"declaration": true,
 		"declarationMap": true,
@@ -19,7 +20,21 @@
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
 		"noEmitOnError": true,
-		"preserveConstEnums": true
+		"preserveConstEnums": true,
+		"jsx": "react",
+		"outDir": "./ts-build",
+		"baseUrl": ".",
+		"paths": {
+			"@/*": [
+				"src/*"
+			]
+		},
 	},
-	"compileOnSave": false
+	"compileOnSave": false,
+	"exclude": [
+		"node_modules"
+	],
+	"include": [
+		"src/**/*"
+	]
 }
