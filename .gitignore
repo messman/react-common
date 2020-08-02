@@ -1,0 +1,25 @@
+# root
+TODO.txt
+NOTES.txt
+
+node_modules
+dist
+build
+npm-debug.log
+
+**/test/**/*.js
+**/test/**/*.js.map
+
+**/ts-build
+
+# Output of 'npm pack'
+*.tgz
+
+# OS X temporary files
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
