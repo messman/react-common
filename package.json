@@ -6,7 +6,8 @@
 	"types": "dist/index.d.ts",
 	"scripts": {
 		"build": "ts-webpack-builder",
-		"build-production": "ts-webpack-builder --isDevelopment=false"
+		"build-production": "ts-webpack-builder --isDevelopment=false",
+		"storybook": "start-storybook --port=58888"
 	},
 	"repository": {
 		"type": "git",
@@ -25,6 +26,11 @@
 		"url": "https://github.com/messman/react-common/issues"
 	},
 	"homepage": "https://github.com/messman/react-common#readme",
+	"peerDependencies": {
+		"react": "^16.13.1",
+		"react-dom": "^16.13.1",
+		"styled-components": "^5.1.1"
+	},
 	"devDependencies": {
 		"@babel/core": "^7.11.0",
 		"@babel/preset-env": "^7.11.0",
@@ -37,6 +43,9 @@
 		"@types/react-dom": "^16.9.8",
 		"@types/styled-components": "^5.1.2",
 		"babel-loader": "^8.1.0",
+		"react": "^16.13.1",
+		"react-dom": "^16.13.1",
+		"styled-components": "^5.1.1",
 		"typescript": "^3.9.7",
 		"typescript-plugin-styled-components": "^1.4.4"
 	}

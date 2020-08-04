@@ -14,6 +14,7 @@ const options = {
 	libraryName: 'react-common',
 	isNode: false,
 
+	// NOTE - edits to this section should be reflected in the storybook config.
 	webpackConfigTransform: (webpackConfig, buildOptions) => {
 
 		// ts-loader is present by default in ts-webpack-builder, but here we want to change some properties.
@@ -27,7 +28,8 @@ const options = {
 					{
 						loader: 'ts-loader',
 						options: {
-							getCustomTransformers: () => ({ before: [createStyledComponentsTransformer()] })
+							getCustomTransformers: () => ({ before: [createStyledComponentsTransformer()] }),
+							onlyCompileBundledFiles: true
 						}
 					}
 				]

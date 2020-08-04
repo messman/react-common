@@ -8,6 +8,7 @@ module.exports = {
 
 	addons: ['@storybook/addon-viewport/register', '@storybook/addon-knobs/register'],
 
+	// NOTE - edits to this section should be reflected in the main build config.
 	webpackFinal: function (config) {
 
 		config.module.rules = [
@@ -20,7 +21,8 @@ module.exports = {
 					{
 						loader: require.resolve('ts-loader'),
 						options: {
-							getCustomTransformers: () => ({ before: [createStyledComponentsTransformer()] })
+							getCustomTransformers: () => ({ before: [createStyledComponentsTransformer()] }),
+							onlyCompileBundledFiles: true
 						}
 					}
 				],
