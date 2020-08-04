@@ -22,7 +22,7 @@
 		"noEmitOnError": true,
 		"preserveConstEnums": true,
 		"jsx": "react",
-		"outDir": "./ts-build",
+		"outDir": "./dist",
 		"baseUrl": ".",
 		"paths": {
 			"@/*": [
