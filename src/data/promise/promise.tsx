@@ -1,62 +1,58 @@
 import * as React from 'react';
 
 export interface PromiseInput<T> {
-	promiseFunc: () => Promise<T>,
+	/** Promise to be run. Output should not be null. */
+	promiseFunc: () => Promise<T>;
+	/** If true, runs the promise immediately on first invocation. */
 	runImmediately: boolean;
 }
 
-export enum PromiseErrorReason {
-	promise,
-	maximum,
+export interface PromiseState<T> {
+	/** Initially-supplied promise function. Output should not be null. */
+	promiseFunc: () => Promise<T>;
+	/** If true, promise is in progress. */
+	isRunning: boolean;
+	/** If not null, promise is completed successfully. */
+	data: T | null;
+	/** If not null, promise encountered an error. */
+	error: Error | null;
 }
 
-export interface PromiseState<T> {
-	promiseFunc: () => Promise<T>,
-	isRunning: boolean,
-	data: T | null,
-	error: Error | null,
+export interface PromiseReset<T> extends PromiseInput<T> {
+	/** If true, will clear existing state. */
+	clearExistingState: boolean;
 }
 
 export interface PromiseOutput<T> extends PromiseState<T> {
-	/** Stops if running. */
-	stop: (clear: boolean) => void,
-	/** Runs, stopping first if running. */
-	run: (clear: boolean) => void,
-	/** Resets, allowing for a new promise function to be used. */
-	reset: (input: PromiseInput<T>, clear: boolean) => void;
+	/** Updates the initial inputs to the promise hook. Abandons any running promise. */
+	reset: (input: Partial<PromiseReset<T>>) => void;
 }
 
-/** Wraps a promise call with a minimum timeout for smooth user experience. */
+/**
+ * Controls a promise with a set of functions.
+*/
 export function usePromise<T>(input: PromiseInput<T> | (() => PromiseInput<T>)): PromiseOutput<T> {
 
+	// The below function only runs the first time.
 	const [state, setState] = React.useState<PromiseOutput<T>>(() => {
-		function updateState(newPromiseFunc: (() => Promise<T>) | null, newIsRunning: boolean, clear: boolean): void {
+
+		// This private function will supply any new promise, isRunning value, etc.
+		function reset(newInput: Partial<PromiseReset<T>>): void {
+			// Disconnect from any running promise.
 			currentPromise.current = null;
-			runFirstTime.current = newIsRunning;
+			const runImmediately = newInput.runImmediately || false;
+			// Controls whether we should run.
+			runFirstTime.current = runImmediately;
 			setState((p) => {
+				// Will always force an update - and that's what we want, since we want to run if that's the case.
 				return {
 					...p,
-					promiseFunc: newPromiseFunc || p.promiseFunc,
-					isRunning: newIsRunning,
-					data: clear ? null : p.data,
-					error: clear ? null : p.error
+					promiseFunc: newInput.promiseFunc || p.promiseFunc,
+					isRunning: runImmediately,
+					data: newInput.clearExistingState ? null : p.data,
+					error: newInput.clearExistingState ? null : p.error
 				};
 			});
-		}
-
-		// Runs, which might override an existing promise.
-		function run(clear: boolean): void {
-			updateState(null, true, clear);
-		}
-
-		// Stops.
-		function stop(clear: boolean): void {
-			updateState(null, false, clear);
-		}
-
-		// Resets the promise hook in order to use a new promise function.
-		function reset(newInput: PromiseInput<T>, clear: boolean): void {
-			updateState(newInput.promiseFunc, newInput.runImmediately, clear);
 		}
 
 		const actualInput = input instanceof Function ? input() : input;
@@ -65,9 +61,7 @@ export function usePromise<T>(input: PromiseInput<T> | (() => PromiseInput<T>)):
 			isRunning: actualInput.runImmediately,
 			data: null,
 			error: null,
-			run: run,
-			stop: stop,
-			reset: reset
+			reset: reset,
 		};
 	});
 
@@ -75,6 +69,7 @@ export function usePromise<T>(input: PromiseInput<T> | (() => PromiseInput<T>)):
 	const currentPromise = React.useRef<Promise<T> | null>(null);
 
 	React.useEffect(() => {
+		// When this hook is destroyed, abandon the promise.
 		return () => {
 			currentPromise.current = null;
 		};
@@ -118,7 +113,10 @@ export function usePromise<T>(input: PromiseInput<T> | (() => PromiseInput<T>)):
 
 export const clampPromiseMaximumTimeoutReason = '__promise-timed-out__';
 
-/** Times out a promise. */
+/**
+ * Allows for a minimum and maximum time to be applied to a promise.
+ * Returns a new promise every time.
+ */
 export function clampPromise<T>(promise: Promise<T>, minMilliseconds: number | null, maxMilliseconds: number | null): Promise<T> {
 
 	return new Promise<T>((resolve, reject) => {

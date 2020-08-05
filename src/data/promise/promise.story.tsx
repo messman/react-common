@@ -17,9 +17,9 @@ export const TestPromise = decorate(() => {
 
 	const actual = number('Actual', 3000);
 
-	const clampedPromiseFunc = () => {
+	const clampedPromiseFunc = React.useCallback(() => {
 		return clampPromise(getTestInfo(actual), minimum, maximum);
-	};
+	}, [actual, minimum, maximum]);
 
 	const promiseState = usePromise({
 		promiseFunc: clampedPromiseFunc,
@@ -29,11 +29,18 @@ export const TestPromise = decorate(() => {
 	const clear = boolean('Clear', true);
 
 	button('Stop', () => {
-		promiseState.stop(clear);
+		promiseState.reset({
+			promiseFunc: clampedPromiseFunc,
+			clearExistingState: clear
+		});
 	});
 
 	button('Run', () => {
-		promiseState.run(clear);
+		promiseState.reset({
+			promiseFunc: clampedPromiseFunc,
+			runImmediately: true,
+			clearExistingState: clear
+		});
 	});
 
 
