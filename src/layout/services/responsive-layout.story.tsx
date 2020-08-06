@@ -2,9 +2,9 @@ import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { useResponsiveLayout, LayoutBreakpoint, LayoutMode, isInvalidLayoutForApplication } from './responsive-layout';
 
-export default { title: 'services/layout' };
+export default { title: 'Layout/Services' };
 
-export const TestResponsive = decorate(() => {
+export const TestResponsive = decorate('Responsive', () => {
 
 	const responsiveLayout = useResponsiveLayout();
 	let invalidText: JSX.Element | null = null;

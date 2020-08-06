@@ -3,7 +3,7 @@ import { decorate } from '@/test/decorate';
 import { styled } from '@/test/styled';
 import { Flex, FlexColumn, FlexRow } from './flex';
 
-export default { title: 'core/layout' };
+export default { title: 'Layout/UI' };
 
 const FlexBorder = styled(Flex)`
 	border: 2px solid ${p => p.theme.color.text};
@@ -11,7 +11,7 @@ const FlexBorder = styled(Flex)`
 
 // 'Root' components use 100% width/height with flex
 
-export const TestFlexColumn = decorate(() => {
+export const TestFlexColumn = decorate('Flex Column', () => {
 	return (
 		<FlexColumn>
 			<FlexBorder flex={2}>
@@ -27,7 +27,7 @@ export const TestFlexColumn = decorate(() => {
 	);
 });
 
-export const TestFlexRow = decorate(() => {
+export const TestFlexRow = decorate('Flex Row', () => {
 	return (
 		<FlexRow>
 			<FlexBorder flex={2}>

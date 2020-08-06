@@ -6,11 +6,12 @@ import { Wrapper } from './wrapper';
 export interface StoryComponent {
 	(): JSX.Element,
 	story?: {
+		name?: string;
 		decorators?: any[];
 	};
 }
 
-export function decorateWith(Component: React.FC, decorators: any[]) {
+export function decorateWith(name: string, Component: React.FC, decorators: any[]) {
 
 	/*
 		Some funky stuff is required here.
@@ -33,6 +34,7 @@ export function decorateWith(Component: React.FC, decorators: any[]) {
 
 	const storyComponent = story as StoryComponent;
 	storyComponent.story = {
+		name: name,
 		decorators: [...decorators, withKnobs]
 	};
 	return storyComponent;
@@ -49,8 +51,8 @@ const DefaultDecorator = (story: () => JSX.Element) => {
 	);
 };
 
-export function decorate(Component: React.FC) {
-	return decorateWith(Component, [DefaultDecorator]);
+export function decorate(name: string, Component: React.FC) {
+	return decorateWith(name, Component, [DefaultDecorator]);
 };
 
 const CommonKnobsWrapper: React.FC = (props) => {

@@ -3,9 +3,9 @@ import { decorate } from '@/test/decorate';
 import { button, boolean, number } from '@storybook/addon-knobs';
 import { clampPromise, usePromise, clampPromiseMaximumTimeoutReason } from './promise';
 
-export default { title: 'services' };
+export default { title: 'Data/Promise' };
 
-export const TestPromise = decorate(() => {
+export const TestPromise = decorate('Promise', () => {
 
 	const useMinimum = boolean('Use Minimum', true);
 	const inputMinimum = number('Minimum', 500);
@@ -17,9 +17,9 @@ export const TestPromise = decorate(() => {
 
 	const actual = number('Actual', 3000);
 
-	const clampedPromiseFunc = React.useCallback(() => {
+	const clampedPromiseFunc = () => {
 		return clampPromise(getTestInfo(actual), minimum, maximum);
-	}, [actual, minimum, maximum]);
+	};
 
 	const promiseState = usePromise({
 		promiseFunc: clampedPromiseFunc,
