@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { createGlobalStyle, ThemeProps, ThemeProvider } from 'styled-components';
-import { keyFactory, useLocalStorage, UseLocalStorageReturn } from '@/storage/local-storage';
+import { UseLocalStorageReturn } from '@/storage/local-storage';
+import { localStorage } from './storage';
 
 /** Custom application theme type. */
 export interface Theme {
@@ -75,18 +76,23 @@ export const GlobalStyles = createGlobalStyle<ThemeProps<Theme>>`
 
 const LocalStorageThemeContext = React.createContext<UseLocalStorageReturn<number>>(null!);
 
-const getKey = keyFactory('react-common');
-const themeIndexKey = getKey('themeIndex');
+export const useLocalStorageThemeProvider = () => {
+	return localStorage.useLocalStorage<number>('themeIndex', (value) => {
+		return value || 0;
+	});
+};
 
-export const LocalStorageThemeProvider: React.FC = (props) => {
-	const localStorageReturn = useLocalStorage(themeIndexKey, 0, (value) => {
-		return !!themes[value];
-	}, null, '');
-	const [themeIndex] = localStorageReturn;
-	const theme = themes[themeIndex];
+export interface LocalStorageThemeProviderProps {
+	value: UseLocalStorageReturn<number>;
+}
+
+export const LocalStorageThemeProvider: React.FC<LocalStorageThemeProviderProps> = (props) => {
+
+	const [themeIndex] = props.value;
+	const theme = themes[themeIndex!];
 
 	return (
-		<LocalStorageThemeContext.Provider value={localStorageReturn}>
+		<LocalStorageThemeContext.Provider value={props.value}>
 			<ThemeProvider theme={theme}>
 				<>
 					<GlobalStyles />
@@ -100,5 +106,5 @@ export const LocalStorageThemeProvider: React.FC = (props) => {
 export const useLocalStorageTheme = () => React.useContext(LocalStorageThemeContext);
 export const useCurrentTheme = () => {
 	const [themeIndex] = React.useContext(LocalStorageThemeContext);
-	return themes[themeIndex];
+	return themes[themeIndex!];
 };

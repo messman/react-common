@@ -1,18 +1,18 @@
 import * as React from 'react';
 import { useDocumentVisibility } from '../visibility/visibility';
 
-interface SafeTimerInput {
+export interface SafeTimerInput {
 	expiration: number;
-	isStarted: boolean;
+	startImmediately: boolean;
 }
 
-interface SafeTimerState {
+export interface SafeTimerState {
 	isStarted: boolean;
 	expired: number | null;
 }
 
-interface SafeTimerOutput extends SafeTimerState {
-	reset: (input: Partial<SafeTimerInput>) => void;
+export interface SafeTimerOutput extends SafeTimerState {
+	reset: (input?: Partial<SafeTimerInput>) => void;
 }
 
 export function createSafeTimerContext(): [React.Provider<SafeTimerOutput>, () => SafeTimerOutput] {
@@ -56,7 +56,7 @@ export function useSafeTimer(input: SafeTimerInput) {
 
 	// First-time setup of state.
 	const [state, setState] = React.useState<SafeTimerState>({
-		isStarted: input.isStarted,
+		isStarted: input.startImmediately,
 		expired: null,
 	});
 
@@ -109,13 +109,13 @@ export function useSafeTimer(input: SafeTimerInput) {
 	const output: SafeTimerOutput = React.useMemo(() => {
 
 		// Change the timer as needed.
-		function reset(newInput: Partial<SafeTimerInput>): void {
+		function reset(newInput?: Partial<SafeTimerInput>): void {
 			// Cancel any existing timer.
 			timerStarted.current = null;
 			clearSetTimeout();
 
-			const isStarted = newInput.isStarted || false;
-			timerExpiration.current = newInput.expiration || timerExpiration.current;
+			const isStarted = newInput?.startImmediately || false;
+			timerExpiration.current = newInput?.expiration || timerExpiration.current;
 			setState({
 				expired: null,
 				isStarted: isStarted

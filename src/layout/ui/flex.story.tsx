@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { styled } from '@/test/styled';
-import { Flex, FlexColumn, FlexRow } from './flex';
+import { Flex, FlexRoot } from './flex';
 
 export default { title: 'Layout/UI' };
 
@@ -13,7 +13,7 @@ const FlexBorder = styled(Flex)`
 
 export const TestFlexColumn = decorate('Flex Column', () => {
 	return (
-		<FlexColumn>
+		<FlexRoot flexDirection='column'>
 			<FlexBorder flex={2}>
 				<p>Flex Column - 2</p>
 			</FlexBorder>
@@ -23,13 +23,13 @@ export const TestFlexColumn = decorate('Flex Column', () => {
 			<FlexBorder flex={0}>
 				<p>Flex Column - 0</p>
 			</FlexBorder>
-		</FlexColumn>
+		</FlexRoot>
 	);
 });
 
 export const TestFlexRow = decorate('Flex Row', () => {
 	return (
-		<FlexRow>
+		<FlexRoot flexDirection='row'>
 			<FlexBorder flex={2}>
 				<p>Flex Row - 2</p>
 			</FlexBorder>
@@ -39,7 +39,7 @@ export const TestFlexRow = decorate('Flex Row', () => {
 			<FlexBorder flex={0}>
 				<p>Flex Row - 0</p>
 			</FlexBorder>
-		</FlexRow>
+		</FlexRoot>
 	);
 });
 
