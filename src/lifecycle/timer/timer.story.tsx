@@ -1,12 +1,14 @@
 import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { number, button } from '@storybook/addon-knobs';
-import { useSafeTimer, createSafeTimerContext, SafeTimerOutput, seconds } from './timer';
+import { useSafeTimer, SafeTimerOutput, seconds } from './timer';
+import { createContextConsumer } from '@/utility/context/context';
+import { getTimerStatus } from '@/test/shared';
 
 export default { title: 'Lifecycle/Timer' };
 
-const [ProviderA, consumerA] = createSafeTimerContext();
-const [ProviderB, consumerB] = createSafeTimerContext();
+const [ProviderA, consumerA] = createContextConsumer<SafeTimerOutput>();
+const [ProviderB, consumerB] = createContextConsumer<SafeTimerOutput>();
 
 export const TestTimer = decorate('Timer', () => {
 
@@ -16,7 +18,7 @@ export const TestTimer = decorate('Timer', () => {
 
 	const timerA = useSafeTimer({
 		expiration: expirationA,
-		startImmediately: false
+		startImmediately: true
 	});
 
 	const timerB = useSafeTimer({
@@ -48,8 +50,8 @@ export const TestTimer = decorate('Timer', () => {
 
 	return (
 		<>
-			<p>A: {getStatus(timerA)}</p>
-			<p>B: {getStatus(timerB)}</p>
+			<p>A: {getTimerStatus(timerA)}</p>
+			<p>B: {getTimerStatus(timerB)}</p>
 			<ProviderA value={timerA}>
 				<ProviderB value={timerB}>
 					<TimerResponder text='A' consumer={consumerA} />
@@ -78,17 +80,7 @@ const TimerResponder: React.FC<TimerResponserProps> = (props) => {
 	}, [timer, timer.expired]);
 
 	return (
-		<p>{text}: {getStatus(timer)} ({count})</p>
+		<p>{text}: {getTimerStatus(timer)} ({count})</p>
 	);
 };
 
-function getStatus(timerOutput: SafeTimerOutput) {
-	if (timerOutput.expired) {
-		const date = new Date(timerOutput.expired);
-		return `expired at ${date.toTimeString()}`;
-	}
-	if (timerOutput.isStarted) {
-		return 'running';
-	}
-	return 'not running';
-}

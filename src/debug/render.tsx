@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useUnique } from '@/utility/unique/unique';
 
 interface RenderChangeInfo {
 	from: any;
@@ -8,6 +9,7 @@ interface RenderChangeInfo {
 // From https://usehooks.com/useWhyDidYouUpdate/
 export function useRenderDebug(componentName: string, props: any) {
 	const previousProps = React.useRef<any>(null);
+	const count = React.useRef(0);
 
 	React.useEffect(() => {
 		if (previousProps.current) {
@@ -24,10 +26,52 @@ export function useRenderDebug(componentName: string, props: any) {
 			});
 
 			if (Object.keys(changed).length) {
-				console.log('render-debug', componentName, changed);
+				const counted = ++count.current;
+				console.log('render-debug', counted, componentName, changed);
 			}
 		}
 
 		previousProps.current = props;
 	});
+}
+
+const windowCountKey = '_counts_';
+
+interface Counts {
+	renders: Map<string, number>;
+	mounts: Map<string, number>;
+}
+
+const counts: Counts = {
+	renders: new Map(),
+	mounts: new Map()
+};
+
+let hasShownMessage = false;
+function setup() {
+	if (!hasShownMessage) {
+		hasShownMessage = true;
+		(window as any)[windowCountKey] = counts;
+		console.log(`Access render counts at window.${windowCountKey}`);
+	}
+}
+
+export function useRenderCount(componentName: string) {
+	setup();
+
+	const id = useUnique();
+	const renderKey = `${componentName}-${id}`;
+	const count = React.useRef(0);
+	count.current++;
+	counts.renders.set(renderKey, count.current);
+
+	React.useEffect(() => {
+		// New mount
+		const mountCount = counts.mounts.get(componentName) || 0;
+		counts.mounts.set(componentName, mountCount + 1);
+
+		return () => {
+			counts.renders.delete(renderKey);
+		};
+	}, []);
 }

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useRefEffect } from '@/lifecycle/ref-effect/ref-effect';
+import { useRefEffect } from '@/utility/ref-effect/ref-effect';
 
 /*
 	Inspired by https://github.com/jaredLunde/react-hook/tree/master/packages/resize-observer

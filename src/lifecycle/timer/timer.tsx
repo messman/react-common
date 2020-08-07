@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useDocumentVisibility } from '../visibility/visibility';
+import { usePrevious } from '@/data/previous/previous';
 
 export interface SafeTimerInput {
 	expiration: number;
@@ -15,16 +16,11 @@ export interface SafeTimerOutput extends SafeTimerState {
 	reset: (input?: Partial<SafeTimerInput>) => void;
 }
 
-export function createSafeTimerContext(): [React.Provider<SafeTimerOutput>, () => SafeTimerOutput] {
-	const Context = React.createContext<SafeTimerOutput>(null!);
-	const consumer = () => React.useContext(Context);
-	return [Context.Provider, consumer];
-}
-
 export function useSafeTimer(input: SafeTimerInput) {
 
 	// Tells us whether the document is visible (not hidden from minimization, changed tab, etc).
 	const documentVisibility = useDocumentVisibility();
+	const [previousDocumentVisibility] = usePrevious(documentVisibility);
 
 	// Tracks timer expiration.
 	const timerExpiration = React.useRef<number>(input.expiration);
@@ -86,6 +82,12 @@ export function useSafeTimer(input: SafeTimerInput) {
 
 	// Handle changes in visibility.
 	React.useEffect(() => {
+		// Special case: when the timer is started immediately, this effect runs and cancels it.
+		// Check against previous visibility value.
+		if (previousDocumentVisibility === undefined) {
+			return;
+		}
+
 		// Stop just the timer - maintain our connection to when the timer started.
 		clearSetTimeout();
 		// If we are hidden, exit.
