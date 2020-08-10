@@ -9,7 +9,7 @@ import * as React from 'react';
  * "Lifts" a value up to make the latest version always available to use in an effect.
  * Use sparingly to get out of complicated scenarios.
  */
-export function useForEffect<T>(value: T): React.MutableRefObject<T> {
+export function useLatest<T>(value: T): React.MutableRefObject<T> {
 	const valueRef = React.useRef<T>(value);
 
 	// useLayoutEffect to run before all useEffect.
@@ -20,24 +20,24 @@ export function useForEffect<T>(value: T): React.MutableRefObject<T> {
 	return valueRef;
 }
 
-/*
-	Completely safe to use, but ask yourself why you feel like you need to use this.
-	The first render is not supposed to be anything special.
-*/
-/**
- * A ref to a boolean that is true for the first render. Not valid for use in effects.
- * Use sparingly to get out of complicated scenarios.
- */
-export function useIsFirstRender(): boolean {
-	const isFirstRender = useForEffect(true);
+// /*
+// 	Completely safe to use, but ask yourself why you feel like you need to use this.
+// 	The first render is not supposed to be anything special.
+// */
+// /**
+//  * A ref to a boolean that is true for the first render. Not valid for use in effects.
+//  * Use sparingly to get out of complicated scenarios.
+//  */
+// export function useIsFirstRender(): boolean {
+// 	const isFirstRender = useLatest(true);
 
-	// useLayoutEffect to run before all useEffect.
-	React.useEffect(() => {
-		isFirstRender.current = false;
-	}, []);
+// 	// useLayoutEffect to run before all useEffect.
+// 	React.useEffect(() => {
+// 		isFirstRender.current = false;
+// 	}, []);
 
-	return isFirstRender.current;
-}
+// 	return isFirstRender.current;
+// }
 
 /*
 	Like useEffect, but doesn't run on that first time.

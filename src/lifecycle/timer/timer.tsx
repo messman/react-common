@@ -41,13 +41,6 @@ export function usePassiveTimer(input: PassiveTimerInput, isPassive: boolean) {
 			timeoutId.current = -1;
 		}
 	}
-	// Function is safe to reuse because it only deals with refs and setState.
-	function startSetTimeout(callback: () => void, timeout: number) {
-		timeoutId.current = window.setTimeout(() => {
-			timeoutId.current = -1;
-			callback();
-		}, timeout);
-	}
 
 	// Handle hook cleanup.
 	React.useEffect(() => {
@@ -60,7 +53,7 @@ export function usePassiveTimer(input: PassiveTimerInput, isPassive: boolean) {
 	React.useEffect(() => {
 		if (!isPassive && state.isStarted && timeoutId.current === -1) {
 			const timeRemaining = timerExpiration.current - (Date.now() - state.lastStartedAt!);
-			startSetTimeout(function () {
+			timeoutId.current = window.setTimeout(() => {
 				clearSetTimeout();
 				setState((p) => {
 					return {

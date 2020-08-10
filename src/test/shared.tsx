@@ -5,7 +5,7 @@ export function getTimerStatus(timerOutput: PassiveTimerOutput, passive?: boolea
 	const { isStarted, lastStartedAt, lastFinishedAt } = timerOutput;
 
 	if (isStarted) {
-		if (passive === false) {
+		if (passive) {
 			return 'started (passive)';
 		}
 		return 'started';
@@ -16,6 +16,17 @@ export function getTimerStatus(timerOutput: PassiveTimerOutput, passive?: boolea
 	}
 	if (lastStartedAt && (!lastFinishedAt || lastFinishedAt < lastStartedAt)) {
 		return `stopped`;
+	}
+	return 'idle';
+}
+
+export function getTimerStatus2(isStarted: boolean, isPassive?: boolean) {
+
+	if (isStarted) {
+		if (isPassive) {
+			return 'started (passive)';
+		}
+		return 'started';
 	}
 	return 'idle';
 }
