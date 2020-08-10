@@ -2,22 +2,15 @@ import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { button } from '@storybook/addon-knobs';
 import { usePrevious } from './previous';
-import { useRenderDebug } from '@/debug/render';
 
-export default { title: 'Data/Previous' };
+export default { title: 'Utility/Previous' };
 
 export const TestPrevious = decorate('Previous', () => {
 
 	const [lastAction, setLastAction] = React.useState('');
 	const [count, setCount] = React.useState(0);
 
-	const [prevCount, clearPrevCount] = usePrevious(count);
-
-	useRenderDebug('Previous', {
-		lastAction,
-		count,
-		prevCount
-	});
+	const prevCount = usePrevious(count);
 
 	function change(action: string, modifier: number): void {
 		setLastAction(action);
@@ -45,7 +38,6 @@ export const TestPrevious = decorate('Previous', () => {
 	button('Reset', () => {
 		setLastAction('');
 		setCount(0);
-		clearPrevCount();
 	});
 
 	const previousCountText = prevCount !== undefined ? <p>Previous: {prevCount}</p> : <></>;

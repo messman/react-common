@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useChangeEffect } from '@/utility/render/render';
 
 
 const DocumentVisibilityContext = React.createContext<boolean>(null!);
@@ -13,7 +14,7 @@ export const DocumentVisibilityProvider: React.FC<DocumentVisibilityProviderProp
 
 	const [documentHidden, setDocumentHidden] = React.useState(document.hidden);
 
-	const [visibility, setVisibility] = React.useState(props.testForceHidden || documentHidden);
+	const [isVisible, setIsVisible] = React.useState(!props.testForceHidden && !documentHidden);
 
 	React.useEffect(() => {
 		function onVisibilityChange() {
@@ -25,12 +26,12 @@ export const DocumentVisibilityProvider: React.FC<DocumentVisibilityProviderProp
 		};
 	}, []);
 
-	React.useEffect(() => {
-		setVisibility(props.testForceHidden || documentHidden);
+	useChangeEffect(() => {
+		setIsVisible(!props.testForceHidden && !documentHidden);
 	}, [documentHidden, props.testForceHidden]);
 
 	return (
-		<DocumentVisibilityContext.Provider value={visibility}>
+		<DocumentVisibilityContext.Provider value={isVisible}>
 			{props.children}
 		</DocumentVisibilityContext.Provider>
 	);

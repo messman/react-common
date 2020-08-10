@@ -13,8 +13,7 @@ export interface LocalStorageNamespace {
 	get: typeof get;
 	getItem: typeof getItem;
 	remove: typeof remove;
-	set: <T>(key: string, value: T) => void;
-	change: <T>(key: string, oldValue: T | undefined, newValue: T | undefined) => boolean;
+	set: <T>(key: string, value: T) => boolean;
 	getWithMigration: <T>(key: string, migration: LocalStorageMigration<T>) => T | undefined;
 	useLocalStorage: <T>(key: string, migration: LocalStorageMigration<T>) => UseLocalStorageReturn<T>;
 }
@@ -42,10 +41,7 @@ export function createNamespace(namespace: string | null, version: string): Loca
 			return remove(getKey(key));
 		},
 		set: function <T>(key: string, value: T) {
-			set(getKey(key), value, version);
-		},
-		change: function <T>(key: string, oldValue: T | undefined, newValue: T | undefined) {
-			return change(getKey(key), oldValue, newValue, version);
+			return set(getKey(key), value, version);
 		},
 		getWithMigration: function <T>(key: string, migration: LocalStorageMigration<T>) {
 			return getWithMigration(getKey(key), migration, version);
@@ -90,7 +86,11 @@ export function getItem<T>(key: string): LocalStorageItem<T> | undefined {
 }
 
 /** Sets to LocalStorage. */
-export function set<T>(key: string, value: T, version: string): void {
+export function set<T>(key: string, value: T, version: string): boolean {
+	if (value === undefined) {
+		remove(key);
+		return true;
+	}
 	try {
 		const item: LocalStorageItem<T> = {
 			x: value,
@@ -99,7 +99,9 @@ export function set<T>(key: string, value: T, version: string): void {
 		window.localStorage.setItem(key, JSON.stringify(item));
 	} catch (error) {
 		console.log(error);
+		return false;
 	}
+	return true;
 }
 
 /** Removes from LocalStorage. */
@@ -111,14 +113,7 @@ export function change<T>(key: string, oldValue: T | undefined, newValue: T | un
 	if (Object.is(oldValue, newValue)) {
 		return false;
 	}
-
-	if (newValue === undefined) {
-		remove(key);
-	}
-	else {
-		set(key, newValue, version);
-	}
-	return true;
+	return set(key, newValue, version);
 }
 
 
@@ -138,7 +133,9 @@ export function getWithMigration<T>(key: string, migration: LocalStorageMigratio
 	const item = getItem<T>(key);
 	const value = item?.x || undefined;
 	const newValue = migration(value, item);
-	change(key, value, newValue, version);
+	if (!Object.is(value, newValue)) {
+		set(key, newValue, version);
+	}
 	return newValue;
 }
 
@@ -146,17 +143,25 @@ export type UseLocalStorageReturn<T> = [T | undefined, (value: T | undefined) =>
 
 /**
  * Creates a state variable that also saves to LocalStorage.
- * Breaks when undefined is used as the value.
+ * Undefined values are not saved.
+ * Initial arguments are frozen for the life of the consuming component.
 */
-export function useLocalStorage<T>(key: string, migration: LocalStorageMigration<T>, version: string): UseLocalStorageReturn<T> {
-	const [storedValue, setStoredValue] = React.useState(() => {
-		return getWithMigration(key, migration, version);
+export function useLocalStorage<T>(key: string, migrationOnGet: LocalStorageMigration<T>, version: string): UseLocalStorageReturn<T> {
+
+	const keyRef = React.useRef(key);
+	const versionRef = React.useRef(version);
+
+	const [value, setValue] = React.useState(() => {
+		return getWithMigration(key, migrationOnGet, version);
 	});
 
-	function setValue(value: T | undefined): void {
-		if (change(key, storedValue, value, version)) {
-			setStoredValue(value);
+	return React.useMemo<UseLocalStorageReturn<T>>(() => {
+		function setNewValue(newValue: T | undefined) {
+			if (!Object.is(value, newValue)) {
+				set(keyRef.current, newValue, versionRef.current);
+				setValue(newValue);
+			}
 		}
-	};
-	return [storedValue, setValue];
+		return [value, setNewValue];
+	}, [value]);
 }

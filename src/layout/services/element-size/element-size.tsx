@@ -54,49 +54,52 @@ interface ResizeObserverEntryBoxSize {
 	inlineSize: number;
 }
 
-// https://reactjs.org/docs/hooks-faq.html#how-can-i-measure-a-dom-node
+/**
+ * Efficiently measures the width and height of an element.
+ */
 export function useElementSize<T extends HTMLElement>(): [React.RefCallback<T>, ElementSize] {
 	// We know this is always the same.
 	const elementSizeObserver = getElementSizeObserver();
 
 	const [size, setSize] = React.useState(defaultElementSize);
-	const isMounted = React.useRef(false);
+
+	// Used to prevent events handled after cleanup.
+	const isHandlingEvents = React.useRef(false);
 
 	const ref = useRefEffect((element) => {
-		isMounted.current = true;
+		isHandlingEvents.current = true;
 
-		function onSizeChanged(entry: ResizeObserverEntry) {
-			if (!isMounted.current) {
-				return;
-			}
-			const width = Math.round(entry.contentRect.width);
-			const height = Math.round(entry.contentRect.height);
+		function trySetSize(width: number, height: number): void {
+			const roundedWidth = Math.round(width);
+			const roundedHeight = Math.round(height);
 			setSize((p) => {
-				if (p.width === width && p.height === height) {
+				if (p.width === roundedWidth && p.height === roundedHeight) {
 					return p;
 				}
 				return {
-					width: width,
-					height: height
+					width: roundedWidth,
+					height: roundedHeight
 				};
 			});
 		}
 
+		function onSizeChanged(entry: ResizeObserverEntry) {
+			if (!isHandlingEvents.current) {
+				return;
+			}
+			trySetSize(entry.contentRect.width, entry.contentRect.height);
+		}
+
 		elementSizeObserver.subscribe(element, onSizeChanged);
 		const rect = element.getBoundingClientRect();
-		const width = Math.round(rect.width);
-		const height = Math.round(rect.height);
-		setSize({
-			width: width,
-			height: height
-		});
+		trySetSize(rect.width, rect.height);
 
 		return () => {
-			isMounted.current = false;
+			isHandlingEvents.current = false;
 			elementSizeObserver.unsubscribe(element);
 			setSize(defaultElementSize);
 		};
-	}, []);
+	}, [elementSizeObserver]);
 
 	return [ref, size];
 };

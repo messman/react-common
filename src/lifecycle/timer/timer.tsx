@@ -1,33 +1,38 @@
 import * as React from 'react';
 import { useDocumentVisibility } from '../visibility/visibility';
-import { usePrevious } from '@/data/previous/previous';
 
-export interface SafeTimerInput {
+export interface PassiveTimerInput {
 	expiration: number;
-	startImmediately: boolean;
+	start: boolean;
 }
 
-export interface SafeTimerState {
+export interface PassiveTimerState {
 	isStarted: boolean;
-	expired: number | null;
+	lastStartedAt: number | null;
+	lastFinishedAt: number | null;
 }
 
-export interface SafeTimerOutput extends SafeTimerState {
-	reset: (input?: Partial<SafeTimerInput>) => void;
+export interface PassiveTimerOutput extends PassiveTimerState {
+	stop: () => void;
+	restart: (expiration?: number) => void;
 }
 
-export function useSafeTimer(input: SafeTimerInput) {
+export function usePassiveTimer(input: PassiveTimerInput, isPassive: boolean) {
 
-	// Tells us whether the document is visible (not hidden from minimization, changed tab, etc).
-	const documentVisibility = useDocumentVisibility();
-	const [previousDocumentVisibility] = usePrevious(documentVisibility);
+	// Tracks timer expiration provided from outside.
+	const timerExpiration = React.useRef(input.expiration);
 
-	// Tracks timer expiration.
-	const timerExpiration = React.useRef<number>(input.expiration);
-	// Tracks the time when the timer started.
-	const timerStarted = React.useRef<number | null>(null);
+	// First-time setup of state.
+	const [state, setState] = React.useState<PassiveTimerState>(() => {
+		return {
+			isStarted: input.start,
+			lastStartedAt: input.start ? Date.now() : null,
+			lastFinishedAt: null
+		};
+	});
+
 	// Tracks the timeout for cancellation.
-	const timeoutId = React.useRef<number>(-1);
+	const timeoutId = React.useRef(-1);
 
 	// Function is safe to reuse because it only deals with refs.
 	function clearSetTimeout() {
@@ -36,112 +41,89 @@ export function useSafeTimer(input: SafeTimerInput) {
 			timeoutId.current = -1;
 		}
 	}
-
 	// Function is safe to reuse because it only deals with refs and setState.
-	function startSetTimeout(timeout: number) {
+	function startSetTimeout(callback: () => void, timeout: number) {
 		timeoutId.current = window.setTimeout(() => {
-			timerStarted.current = null;
-			clearSetTimeout();
-
-			setState({
-				isStarted: false,
-				expired: Date.now()
-			});
+			timeoutId.current = -1;
+			callback();
 		}, timeout);
 	}
-
-	// First-time setup of state.
-	const [state, setState] = React.useState<SafeTimerState>({
-		isStarted: input.startImmediately,
-		expired: null,
-	});
 
 	// Handle hook cleanup.
 	React.useEffect(() => {
 		return () => {
-			timerStarted.current = null;
 			clearSetTimeout();
 		};
 	}, []);
 
-	// Handle timer starting.
+	// Handle when passive changes and the timer is done.
 	React.useEffect(() => {
-		// Cancel any existing timers.
-		timerStarted.current = null;
-		clearSetTimeout();
-
-		// If we aren't supposed to start, exit.
-		if (!state.isStarted) {
-			return;
+		if (!isPassive && state.isStarted && timeoutId.current === -1) {
+			const timeRemaining = timerExpiration.current - (Date.now() - state.lastStartedAt!);
+			startSetTimeout(function () {
+				clearSetTimeout();
+				setState((p) => {
+					return {
+						...p,
+						isStarted: false,
+						lastFinishedAt: Date.now()
+					};
+				});
+			}, timeRemaining);
 		}
-
-		// Track our start time and set a timeout.
-		timerStarted.current = Date.now();
-		startSetTimeout(timerExpiration.current);
-	}, [state, state.isStarted]);
-
-	// Handle changes in visibility.
-	React.useEffect(() => {
-		// Special case: when the timer is started immediately, this effect runs and cancels it.
-		// Check against previous visibility value.
-		if (previousDocumentVisibility === undefined) {
-			return;
-		}
-
-		// Stop just the timer - maintain our connection to when the timer started.
-		clearSetTimeout();
-		// If we are hidden, exit.
-		if (!documentVisibility) {
-			return;
-		}
-
-		// Retrieve the time that we started the timeout, so we can restore it.
-		const startedTime = timerStarted.current;
-		if (!startedTime) {
-			return;
-		}
-
-		// Start the timeout again just for the remaining time.
-		const timeElapsed = Date.now() - startedTime;
-		const timeRemaining = Math.max(timerExpiration.current - timeElapsed, 0);
-		startSetTimeout(timeRemaining);
-	}, [documentVisibility]);
-
-	// Create our output functions.
-	const output: SafeTimerOutput = React.useMemo(() => {
-
-		// Change the timer as needed.
-		function reset(newInput?: Partial<SafeTimerInput>): void {
-			// Cancel any existing timer.
-			timerStarted.current = null;
+		else if (isPassive && state.isStarted) {
 			clearSetTimeout();
+		}
+	}, [isPassive, state.isStarted, state.lastStartedAt]);
 
-			const isStarted = newInput?.startImmediately || false;
-			timerExpiration.current = newInput?.expiration || timerExpiration.current;
-			setState({
-				expired: null,
-				isStarted: isStarted
+	return React.useMemo<PassiveTimerOutput>(() => {
+		function stop(): void {
+			clearSetTimeout();
+			setState((p) => {
+				if (!p.isStarted) {
+					return p;
+				}
+				return {
+					...p,
+					isStarted: false
+				};
+			});
+		}
+
+		function restart(expiration?: number): void {
+			clearSetTimeout();
+			if (expiration) {
+				timerExpiration.current = expiration;
+			}
+			setState((p) => {
+				return {
+					...p,
+					isStarted: true,
+					lastStartedAt: Date.now()
+				};
 			});
 		}
 
 		return {
 			...state,
-			reset: reset
+			stop: stop,
+			restart: restart
 		};
 	}, [state]);
-
-	return output;
 };
 
-export function seconds(seconds: number): number {
-	return seconds * 1000;
+
+export interface VisibilityTimerInput extends PassiveTimerInput {
 }
 
-export function minutes(minutes: number): number {
-	return seconds(minutes * 60);
+export interface VisibilityTimerState extends PassiveTimerState {
 }
 
-export function hours(hours: number): number {
-	return minutes(hours * 60);
+export interface VisibilityTimerOutput extends PassiveTimerOutput {
 }
 
+export function useVisibilityTimer(input: VisibilityTimerInput) {
+	// Tells us whether the document is visible (not hidden from minimization, changed tab, etc).
+	const documentVisibility = useDocumentVisibility();
+	return usePassiveTimer(input, !documentVisibility);
+}

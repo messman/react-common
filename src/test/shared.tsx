@@ -1,12 +1,35 @@
-import { SafeTimerOutput } from '@/lifecycle/timer/timer';
+import { PassiveTimerOutput } from '@/lifecycle/timer/timer';
+import { PromiseOutput } from '@/data/promise/promise';
 
-export function getTimerStatus(timerOutput: SafeTimerOutput) {
-	if (timerOutput.expired) {
-		const date = new Date(timerOutput.expired);
-		return `expired at ${date.toTimeString()}`;
+export function getTimerStatus(timerOutput: PassiveTimerOutput, passive?: boolean) {
+	const { isStarted, lastStartedAt, lastFinishedAt } = timerOutput;
+
+	if (isStarted) {
+		if (passive === false) {
+			return 'started (passive)';
+		}
+		return 'started';
 	}
-	if (timerOutput.isStarted) {
+	if (lastFinishedAt && lastFinishedAt > lastStartedAt!) {
+		const date = new Date(lastFinishedAt!);
+		return `finished at ${date.toLocaleTimeString()}`;
+	}
+	if (lastStartedAt && (!lastFinishedAt || lastFinishedAt < lastStartedAt)) {
+		return `stopped`;
+	}
+	return 'idle';
+}
+
+
+export function getPromiseStatus<T>(promiseOutput: PromiseOutput<T>) {
+	if (promiseOutput.isRunning) {
 		return 'running';
 	}
-	return 'not running';
+	if (promiseOutput.data) {
+		return 'idle, with data';
+	}
+	if (promiseOutput.error) {
+		return 'idle, with error';
+	}
+	return 'idle';
 }
