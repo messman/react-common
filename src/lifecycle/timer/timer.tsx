@@ -75,7 +75,7 @@ export function useControlledTruthyTimer(isStartedInitially: boolean, timeout: n
 	return React.useMemo<ControlledTruthyTimerOutput>(() => {
 		function reset(start: boolean) {
 			setState((p) => {
-				if (!p.isStarted) {
+				if (!p.isStarted && !start) {
 					return p;
 				}
 				return {

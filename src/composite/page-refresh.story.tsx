@@ -1,14 +1,15 @@
 import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { number, select, boolean } from '@storybook/addon-knobs';
-import { useTruthyTimer, useControlledTruthyTimer, ControlledTruthyTimerOutput } from '@/lifecycle/timer/timer';
+import { useTruthyTimer } from '@/lifecycle/timer/timer';
 import { createContextConsumer } from '@/utility/context/context';
 import { FlexRoot, FlexRow, FlexColumn } from '@/layout/ui/flex';
 import styled from 'styled-components';
 import { getPromiseStatus, getTruthyTimerStatus } from '@/test/shared';
-import { clampPromise, DataControlledPromiseOutput, useDataControlledPromise } from '@/data/promise/promise';
+import { clampPromise } from '@/data/promise/promise';
 import { useDocumentVisibility } from '@/lifecycle/visibility/visibility';
 import { seconds } from '@/utility/time/time';
+import { StalePromiseTimerOutput, useStalePromiseTimer, StalePromiseTimerComponent } from './stale-promise-timer';
 
 /*
 	Goal of this test:
@@ -25,11 +26,9 @@ import { seconds } from '@/utility/time/time';
 
 export default { title: 'Composite/Page Refresh' };
 
-const [HomeTimerProvider, homeTimerConsumer] = createContextConsumer<ControlledTruthyTimerOutput>();
-const [PopularTimerProvider, popularTimerConsumer] = createContextConsumer<ControlledTruthyTimerOutput>();
-const [HomeDataProvider, homeDataConsumer] = createContextConsumer<DataControlledPromiseOutput<string[]>>();
-const [PopularDataProvider, popularDataConsumer] = createContextConsumer<DataControlledPromiseOutput<string[]>>();
-const [UsePageRefreshButtonProvider, usePageRefreshButtonConsumer] = createContextConsumer<boolean>();
+const [HomePromiseTimerProvider, homePromiseTimerConsumer] = createContextConsumer<StalePromiseTimerOutput<string[]>>();
+const [PopularPromiseTimerProvider, popularPromiseTimerConsumer] = createContextConsumer<StalePromiseTimerOutput<string[]>>();
+const [UseRefreshButtonOnTimerExpirationProvider, useRefreshButtonOnTimerExpirationConsumer] = createContextConsumer<boolean>();
 
 const pages = {
 	home: 0,
@@ -77,26 +76,30 @@ export const TestPageRefresh = decorate('Page Refresh', () => {
 		setUpdateTimerIsCompleted(true);
 	});
 
-	const homePromise = useDataControlledPromise(false, promiseFunc, (data, error) => {
-		console.log('home promise completed', data, error);
-		return {
-			run: false
-		};
-	});
-	const homeTimer = useControlledTruthyTimer(false, homeTimeout, documentVisibility, () => {
-		console.log('home timer completed');
-		return false;
+	const homePromiseTimer = useStalePromiseTimer({
+		initialAction: StalePromiseTimerComponent.none,
+		timerTimeout: homeTimeout,
+		isTimerTruthy: documentVisibility,
+		timerCallback: () => {
+			console.log('home timer completed');
+		},
+		promiseFunc: promiseFunc,
+		promiseCallback: (data, error) => {
+			console.log('home promise completed', data, error);
+		}
 	});
 
-	const popularPromise = useDataControlledPromise(false, promiseFunc, (data, error) => {
-		console.log('popular promise completed', data, error);
-		return {
-			run: false
-		};
-	});
-	const popularTimer = useControlledTruthyTimer(false, popularTimeout, documentVisibility, () => {
-		console.log('popular timer completed');
-		return false;
+	const popularPromiseTimer = useStalePromiseTimer({
+		initialAction: StalePromiseTimerComponent.none,
+		timerTimeout: popularTimeout,
+		isTimerTruthy: documentVisibility,
+		timerCallback: () => {
+			console.log('popular timer completed');
+		},
+		promiseFunc: promiseFunc,
+		promiseCallback: (data, error) => {
+			console.log('popular promise completed', data, error);
+		}
 	});
 
 	let content: JSX.Element = null!;
@@ -113,20 +116,16 @@ export const TestPageRefresh = decorate('Page Refresh', () => {
 	}
 
 	return (
-		<UsePageRefreshButtonProvider value={useRefreshButtonOnPages}>
-			<HomeDataProvider value={homePromise}>
-				<PopularDataProvider value={popularPromise}>
-					<HomeTimerProvider value={homeTimer}>
-						<PopularTimerProvider value={popularTimer}>
-							<FlexRoot flexDirection='column'>
-								{content}
-								{windowReloadNotice}
-							</FlexRoot>
-						</PopularTimerProvider>
-					</HomeTimerProvider>
-				</PopularDataProvider>
-			</HomeDataProvider>
-		</UsePageRefreshButtonProvider>
+		<UseRefreshButtonOnTimerExpirationProvider value={useRefreshButtonOnPages}>
+			<HomePromiseTimerProvider value={homePromiseTimer}>
+				<PopularPromiseTimerProvider value={popularPromiseTimer}>
+					<FlexRoot flexDirection='column'>
+						{content}
+						{windowReloadNotice}
+					</FlexRoot>
+				</PopularPromiseTimerProvider>
+			</HomePromiseTimerProvider>
+		</UseRefreshButtonOnTimerExpirationProvider>
 	);
 });
 
@@ -175,97 +174,67 @@ const PageManager: React.FC<PageManagerProps> = (props) => {
 				name='Home'
 				color='deepskyblue'
 				isActive={isActiveHome}
-				promiseConsumer={homeDataConsumer}
-				timerConsumer={homeTimerConsumer}
+				consumer={homePromiseTimerConsumer}
 			/>
 			<Page
 				name='Popular'
 				color='darkturquoise'
 				isActive={!isActiveHome}
-				promiseConsumer={popularDataConsumer}
-				timerConsumer={popularTimerConsumer}
+				consumer={popularPromiseTimerConsumer}
 			/>
 		</FlexRow>
 	);
 };
 
-interface PageProps {
+interface PageProps<T> {
 	name: string;
 	color: string;
 	isActive: boolean;
-	promiseConsumer: () => DataControlledPromiseOutput<string[]>;
-	timerConsumer: () => ControlledTruthyTimerOutput;
+	consumer: () => StalePromiseTimerOutput<T>;
 }
 
-const Page: React.FC<PageProps> = (props) => {
+const Page: React.FC<PageProps<string[]>> = (props) => {
 
-	const { name, color, isActive, promiseConsumer, timerConsumer } = props;
+	const { name, color, isActive, consumer } = props;
 
 	// In a real-world example, you likely don't have this - we have it here for testing. So disregard the logic around this.
-	const useRefreshButtonOnTimerExpiration = usePageRefreshButtonConsumer();
+	const useRefreshButtonOnTimerExpiration = useRefreshButtonOnTimerExpirationConsumer();
 
 	const documentVisibility = useDocumentVisibility();
-	const timer = timerConsumer();
-	const promise = promiseConsumer();
 
-	const [isPromiseDataStale, setPromiseDataIsStale] = React.useState(true);
+	const promiseTimer = consumer();
+	const { timer, promise, lastCompleted } = promiseTimer;
 
 	React.useEffect(() => {
 
-		if (timer.isStarted) {
-			if (promise.isRunning) {
-				// Should not happen.
-			}
-			else {
-				// Do nothing.
-			}
-		}
-		else {
-			if (promise.isRunning) {
-				// Do nothing.
-			}
-			else {
-				if (isPromiseDataStale) {
+		console.log('effect', name, timer.isStarted, promise.isRunning, StalePromiseTimerComponent[lastCompleted], isActive);
+		if (!timer.isStarted && !promise.isRunning) {
+			if (lastCompleted === StalePromiseTimerComponent.none) {
+				if (isActive) {
+					// Startup, choose the promise first.
 					promise.reset({
 						run: true
 					});
 				}
-				else {
-					timer.reset(true);
+			}
+			else if (lastCompleted === StalePromiseTimerComponent.timer) {
+				if (isActive) {
+					if (!useRefreshButtonOnTimerExpiration) {
+						promise.reset({
+							run: true
+						});
+					}
 				}
-				setPromiseDataIsStale((p) => {
-					return !p;
-				});
+			}
+			else if (lastCompleted === StalePromiseTimerComponent.promise) {
+				// NO check for active here, in case user switched off before ever seeing the old data.
+				timer.reset(true);
 			}
 		}
 
-	}, [timer, promise, isPromiseDataStale]);
+	}, [timer, promise, lastCompleted, isActive, useRefreshButtonOnTimerExpiration]);
 
-	// Handles timer completion and the initial run.
-	React.useEffect(() => {
-		if (!isActive) {
-			return;
-		}
-
-		if (!promiseRef.current.isRunning && (!promiseRef.current.data || (timer.lastFinishedAt && !useRefreshButtonOnTimerExpiration))) {
-			promiseRef.current.reset({
-				runImmediately: true
-			});
-		}
-	}, [isActive, timer.lastFinishedAt]);
-
-	// Handles promise completion and the initial run.
-	React.useEffect(() => {
-		if (!isActive) {
-			return;
-		}
-
-		if (!timerRef.current.isStarted && promise.data && !promise.isRunning) {
-			timerRef.current.restart();
-		}
-
-	}, [isActive, promise]);
-
+	// Render posts
 	let postsRender: JSX.Element = null!;
 	if (promise.data) {
 		const posts = promise.data.map((post, i) => {
@@ -279,8 +248,9 @@ const Page: React.FC<PageProps> = (props) => {
 		postsRender = <p>No posts to display.</p>;
 	}
 
+	// Show reload button
 	let reloadButton: JSX.Element | null = null;
-	if (!timer.isStarted && isPromiseDataStale && useRefreshButtonOnTimerExpiration) {
+	if (useRefreshButtonOnTimerExpiration && !timer.isStarted && !promise.isRunning && lastCompleted === StalePromiseTimerComponent.timer) {
 		function onReloadClick() {
 			promise.reset({
 				run: true
@@ -288,7 +258,7 @@ const Page: React.FC<PageProps> = (props) => {
 		}
 
 		reloadButton = (
-			<button onClick={onReloadClick}>Reload</button>
+			<button onClick={onReloadClick}>Refresh Data</button>
 		);
 	}
 
@@ -298,7 +268,7 @@ const Page: React.FC<PageProps> = (props) => {
 				<Margin>
 					<Center>
 						<h2>{name}</h2>
-						<p>{isActive ? 'Active' : 'Not Active'}</p>
+						<p>{isActive ? 'Active' : 'Inactive'}</p>
 						<p>{useRefreshButtonOnTimerExpiration ? 'Using Refresh Button' : 'Using Instant Reload'}</p>
 					</Center>
 					<hr />
