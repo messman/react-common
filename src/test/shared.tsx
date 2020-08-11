@@ -1,8 +1,8 @@
 
-export function getTruthyTimerStatus(isStarted: boolean, timeout: number, isTruthy: boolean) {
+export function getTruthyTimerStatus(isStarted: boolean, timeout?: number | null, isTruthy?: boolean) {
 	const startedText = isStarted ? 'started' : 'idle';
-	const timeoutText = isStarted ? ` (${timeout})` : '';
-	const truthyText = isStarted ? ` (${isTruthy ? 'truthy' : 'falsy'})` : '';
+	const timeoutText = (isStarted && !!timeout) ? ` (${timeout})` : '';
+	const truthyText = (isStarted && isTruthy !== undefined) ? ` (${isTruthy ? 'truthy' : 'falsy'})` : '';
 	return startedText + timeoutText + truthyText;
 }
 
