@@ -40,86 +40,54 @@ export function useTruthyTimer(isStarted: boolean, timeout: number, isTruthy: bo
 	}, [isStartedInternalTimer, timeout, ...restartOn]);
 }
 
-export interface TruthyTimerInitialInput {
-	start: boolean;
-	timeout: number;
-}
 
-export interface TruthyTimerState {
+interface ControlledTruthyTimerState {
 	isStarted: boolean;
-	timeout: number;
 	startCounter: number;
 }
 
-export interface TruthyTimerCallbackInput {
-	start: boolean;
-	timeout?: number;
-}
-
-export interface TruthyTimerOutput {
+export interface ControlledTruthyTimerOutput {
 	isStarted: boolean;
-	timeout: number;
-	stop: () => void;
-	restart: (timeout?: number) => void;
+	reset: (start: boolean) => void;
 }
 
-export function useControlledTruthyTimer(initialInput: TruthyTimerInitialInput, isTruthy: boolean, callback?: () => TruthyTimerInitialInput): TruthyTimerOutput {
+export function useControlledTruthyTimer(isStartedInitially: boolean, timeout: number, isTruthy: boolean, callback?: () => boolean): ControlledTruthyTimerOutput {
 
-	const [state, setState] = React.useState<TruthyTimerState>(() => {
-		return {
-			isStarted: initialInput.start,
-			timeout: initialInput.timeout,
-			startCounter: 0
-		};
+	const [state, setState] = React.useState<ControlledTruthyTimerState>({
+		isStarted: isStartedInitially,
+		startCounter: 0
 	});
 
-	useTruthyTimer(state.isStarted, state.timeout, isTruthy, () => {
-		let newInput: TruthyTimerCallbackInput = {
-			start: false
-		};
+	useTruthyTimer(state.isStarted, timeout, isTruthy, () => {
+		let restart = false;
 		if (callback) {
-			newInput = callback();
+			restart = callback();
 		}
 
 		setState((p) => {
 			return {
-				isStarted: newInput.start,
-				timeout: newInput.timeout || p.timeout,
-				startCounter: newInput.start ? p.startCounter + 1 : p.startCounter
+				isStarted: restart,
+				startCounter: restart ? p.startCounter + 1 : p.startCounter
 			};
 		});
 	}, [state.startCounter]);
 
-	return React.useMemo<TruthyTimerOutput>(() => {
-		function stop() {
+	return React.useMemo<ControlledTruthyTimerOutput>(() => {
+		function reset(start: boolean) {
 			setState((p) => {
 				if (!p.isStarted) {
 					return p;
 				}
-
 				return {
-					isStarted: false,
-					timeout: p.timeout,
-					startCounter: p.startCounter
-				};
-			});
-		}
-
-		function restart(timeout?: number) {
-			setState((p) => {
-				return {
-					isStarted: false,
-					timeout: timeout === undefined ? p.timeout : timeout,
-					startCounter: p.startCounter + 1
+					isStarted: start,
+					startCounter: start ? p.startCounter + 1 : p.startCounter
 				};
 			});
 		}
 
 		return {
 			isStarted: state.isStarted,
-			timeout: state.timeout,
-			stop: stop,
-			restart: restart
+			reset: reset
 		};
 	}, [state]);
 }

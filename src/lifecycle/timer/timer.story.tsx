@@ -15,38 +15,38 @@ export const TestControlledTruthyTimer = decorate('Controlled Truthy Timer', () 
 	const timeoutA = seconds(number('Timeout A', 5));
 	const timeoutB = seconds(number('Timeout B', 8));
 
-	const timerA = useControlledTruthyTimer({
-		start: true,
-		timeout: timeoutA
-	}, documentVisibility);
+	const timerA = useControlledTruthyTimer(true, timeoutA, documentVisibility, () => {
+		console.log('completed A');
+		return false;
+	});
 
-	const timerB = useControlledTruthyTimer({
-		start: false,
-		timeout: timeoutB
-	}, documentVisibility);
+	const timerB = useControlledTruthyTimer(false, timeoutB, documentVisibility, () => {
+		console.log('completed B');
+		return true;
+	});
 
 	button('Stop A', () => {
-		timerA.stop();
+		timerA.reset(false);
 	});
 
 	button('Restart A', () => {
-		timerA.restart(timeoutA);
+		timerA.reset(true);
 	});
 
 	button('Stop B', () => {
-		timerB.stop();
+		timerB.reset(false);
 	});
 
 	button('Restart B', () => {
-		timerB.restart(timeoutB);
+		timerB.reset(true);
 	});
 
 	return (
 		<>
 			<p>Controlled Truthy Timer</p>
 			<p>Visibility: {documentVisibility ? 'visible' : 'hidden'}</p>
-			<p>A: {getTruthyTimerStatus(timerA.isStarted, timerA.timeout, documentVisibility)}</p>
-			<p>B: {getTruthyTimerStatus(timerB.isStarted, timerB.timeout, documentVisibility)}</p>
+			<p>A: {getTruthyTimerStatus(timerA.isStarted, timeoutA, documentVisibility)}</p>
+			<p>B: {getTruthyTimerStatus(timerB.isStarted, timeoutB, documentVisibility)}</p>
 		</>
 	);
 });

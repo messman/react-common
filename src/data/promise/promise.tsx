@@ -1,120 +1,176 @@
 import * as React from 'react';
+import { useLatest } from '@/utility/render/render';
 
-export interface PromiseInput<T> {
-	/** Promise to be run. Output should not be null. */
-	promiseFunc: () => Promise<T>;
-	/** If true, runs the promise immediately on first invocation. */
-	runImmediately: boolean;
+
+export function usePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>, callback: (data: T | null, error: Error | null) => void, restartOn?: any[]) {
+
+	/*
+		The callback could change every render, and we don't know when the promise will finish.
+		So for this special case, always hold the most recent version of the callback just to use at the end.
+	*/
+	const latestCallback = useLatest(callback);
+
+	restartOn = restartOn || [];
+
+	// This effect runs like a change callback. I could not find a way around it.
+	React.useEffect(() => {
+		if (!isRunning) {
+			return;
+		}
+		let isCleanedUp = false;
+
+		promiseFunc()
+			.then((resp: T) => {
+				if (!isCleanedUp) {
+					latestCallback.current(resp, null);
+				}
+			})
+			.catch((err: Error) => {
+				if (!isCleanedUp) {
+					latestCallback.current(null, err);
+				}
+			});
+
+		return () => {
+			// Cleanup
+			isCleanedUp = true;
+		};
+
+	}, [isRunning, promiseFunc, ...restartOn]);
 }
 
-export interface PromiseState<T> {
-	/** Initially-supplied promise function. Output should not be null. */
-	promiseFunc: () => Promise<T>;
+interface ControlledPromiseState {
 	/** If true, promise is in progress. */
 	isRunning: boolean;
-	/** If not null, promise is completed successfully. */
-	data: T | null;
-	/** If not null, promise encountered an error. */
-	error: Error | null;
+	runCounter: number;
 }
 
-export interface PromiseReset<T> extends PromiseInput<T> {
-	/** If true, will clear existing state. */
-	clearExistingState: boolean;
-}
-
-export interface PromiseOutput<T> extends PromiseState<T> {
+export interface ControlledPromiseOutput {
+	isRunning: boolean;
 	/** Updates the initial inputs to the promise hook. Abandons any running promise. */
-	reset: (input?: Partial<PromiseReset<T>>) => void;
+	reset: (run: boolean) => void;
 }
 
 /**
  * Controls a promise with a set of functions.
 */
-export function usePromise<T>(input: PromiseInput<T> | (() => PromiseInput<T>)): PromiseOutput<T> {
+export function useControlledPromise<T>(isRunningInitially: boolean, promiseFunc: () => Promise<T>, callback?: (data: T | null, error: Error | null) => boolean): ControlledPromiseOutput {
 
-	// The below function only runs the first time.
-	const [state, setState] = React.useState<PromiseState<T>>(() => {
-		const actualInput = input instanceof Function ? input() : input;
-		return {
-			promiseFunc: actualInput.promiseFunc,
-			isRunning: actualInput.runImmediately,
-			data: null,
-			error: null
-		};
+	const [state, setState] = React.useState<ControlledPromiseState>({
+		isRunning: isRunningInitially,
+		runCounter: 0
 	});
 
-	// Hold our current promise as a way to guard against older promises that complete for newer promises.
-	const currentPromise = React.useRef<Promise<T> | null>(null);
+	function updateOnReset(run: boolean) {
+		setState((p) => {
+			return {
+				isRunning: run,
+				runCounter: run ? p.runCounter + 1 : p.runCounter
+			};
+		});
+	}
 
-	React.useEffect(() => {
-		// When this hook is destroyed, abandon the promise.
-		return () => {
-			currentPromise.current = null;
-		};
-	}, []);
+	usePromise<T>(state.isRunning, promiseFunc, (data, error) => {
+		let rerun = false;
+		if (callback) {
+			rerun = callback(data, error);
+		}
+		updateOnReset(rerun);
+	}, [state.runCounter]);
 
-	const output: PromiseOutput<T> = React.useMemo(() => {
-
-		// This private function will supply any new promise, isRunning value, etc.
-		function reset(newInput?: Partial<PromiseReset<T>>): void {
-			// Disconnect from any running promise.
-			currentPromise.current = null;
-			const runImmediately = newInput?.runImmediately || false;
-			setState((p) => {
-				// Will always force an update - and that's what we want, since we want to run if that's the case.
-				return {
-					promiseFunc: newInput?.promiseFunc || p.promiseFunc,
-					isRunning: runImmediately,
-					data: newInput?.clearExistingState ? null : p.data,
-					error: newInput?.clearExistingState ? null : p.error
-				};
-			});
+	return React.useMemo<ControlledPromiseOutput>(() => {
+		function reset(run: boolean) {
+			updateOnReset(run);
 		}
 
 		return {
-			...state,
+			isRunning: state.isRunning,
 			reset: reset
 		};
 	}, [state]);
+}
 
-	React.useEffect(() => {
-		// This effect also runs on startup, so it takes care of the case of 'runImmediately'.
+interface DataControlledPromiseState<T> {
+	data: T | null;
+	error: Error | null;
+}
 
-		currentPromise.current = null;
-		if (!state.isRunning) {
-			return;
+interface DataControlledPromiseCallbackInput {
+	run: boolean;
+	clear?: boolean;
+}
+
+
+export interface DataControlledPromiseOutput<T> {
+	isRunning: boolean;
+	data: T | null;
+	error: Error | null;
+	/** Updates the initial inputs to the promise hook. Abandons any running promise. */
+	reset: (input: DataControlledPromiseCallbackInput) => void;
+}
+
+/**
+ * Controls a promise with a set of functions.
+*/
+export function useDataControlledPromise<T>(isRunningInitially: boolean, promiseFunc: () => Promise<T>, callback?: (data: T | null, error: Error | null) => DataControlledPromiseCallbackInput): DataControlledPromiseOutput<T> {
+
+	const [state, setState] = React.useState<DataControlledPromiseState<T>>({
+		data: null,
+		error: null
+	});
+
+	const controlledPromise = useControlledPromise(isRunningInitially, promiseFunc, (data, error) => {
+		let rerun = false;
+		let clear = false;
+		if (callback) {
+			const callbackInput = callback(data, error);
+			rerun = callbackInput.run;
+			clear = !!callbackInput.clear;
 		}
 
-		// Run promise.
-		function wrapFinish(data: T | null, error: Error | null): void {
-			// If this is from an old promise, disregard.
-			if (currentPromise.current !== promise) {
-				return;
+		const dataToSet = clear ? null : data;
+		const errorToSet = clear ? null : error;
+
+		setState((p) => {
+			if (p.data === dataToSet && p.error === errorToSet) {
+				return p;
 			}
-			setState((p) => {
-				return {
-					...p,
-					isRunning: false,
-					data: data,
-					error: error
-				};
-			});
+			return {
+				data: dataToSet,
+				error: errorToSet
+			};
+		});
+		return rerun;
+	});
+
+	const isRunning = controlledPromise.isRunning;
+	const innerReset = controlledPromise.reset;
+
+	return React.useMemo<DataControlledPromiseOutput<T>>(() => {
+		function reset(input: DataControlledPromiseCallbackInput) {
+			const { run, clear } = input;
+
+			if (clear) {
+				setState((p) => {
+					if (!p.data && !p.error) {
+						return p;
+					}
+					return {
+						data: null,
+						error: null
+					};
+				});
+			}
+			innerReset(run);
 		}
 
-		const promise = state.promiseFunc();
-		currentPromise.current = promise;
-		promise
-			.then((resp) => {
-				wrapFinish(resp, null);
-			})
-			.catch((err: Error) => {
-				wrapFinish(null, err);
-			});
-
-	}, [state, state.isRunning]);
-
-	return output;
+		return {
+			isRunning: isRunning,
+			data: state.data,
+			error: state.error,
+			reset: reset
+		};
+	}, [state, isRunning, innerReset]);
 }
 
 export const clampPromiseMaximumTimeoutReason = '__promise-timed-out__';

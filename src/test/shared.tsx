@@ -1,21 +1,15 @@
-import { PromiseOutput } from '@/data/promise/promise';
 
 export function getTruthyTimerStatus(isStarted: boolean, timeout: number, isTruthy: boolean) {
 	const startedText = isStarted ? 'started' : 'idle';
 	const timeoutText = isStarted ? ` (${timeout})` : '';
 	const truthyText = isStarted ? ` (${isTruthy ? 'truthy' : 'falsy'})` : '';
-	return [startedText, timeoutText, truthyText].join('');
+	return startedText + timeoutText + truthyText;
 }
 
-export function getPromiseStatus<T>(promiseOutput: PromiseOutput<T>) {
-	if (promiseOutput.isRunning) {
-		return 'running';
-	}
-	if (promiseOutput.data) {
-		return 'idle, with data';
-	}
-	if (promiseOutput.error) {
-		return 'idle, with error';
-	}
-	return 'idle';
+export function getPromiseStatus(isRunning: boolean, data: any | null, error: Error | null) {
+
+	const runningText = isRunning ? 'running' : 'idle';
+	const dataText = data ? ` (has data: ${data?.toString() || ''})` : '';
+	const errorText = error ? ` (has error: ${error?.message || ''})` : '';
+	return runningText + dataText + errorText;
 }
