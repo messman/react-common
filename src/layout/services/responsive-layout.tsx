@@ -20,10 +20,6 @@ export interface ResponsiveLayout {
 	mode: LayoutMode;
 }
 
-export function isInvalidLayoutForApplication(layout: ResponsiveLayout): boolean {
-	return layout.heightBreakpoint < LayoutBreakpoint.regular;
-}
-
 function getLayout(dimensions: WindowDimensions, lowerBreakpoints: number[]): ResponsiveLayout {
 
 	const lowest = lowerBreakpoints[0];

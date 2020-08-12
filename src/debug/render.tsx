@@ -7,6 +7,11 @@ interface RenderChangeInfo {
 }
 
 // From https://usehooks.com/useWhyDidYouUpdate/
+
+/**
+ * Stores previously-supplied props dictionary and compares each key-value to report on changes.
+ * Logs to the console.
+ */
 export function useRenderDebug(componentName: string, props: any) {
 	const previousProps = React.useRef<any>(null);
 	const count = React.useRef(0);
@@ -56,6 +61,10 @@ function setup() {
 	}
 }
 
+/**
+ * Counts the number of times a component with this name is created and rendered.
+ * Makes the counts available on the window object (see console log after using).
+*/
 export function useRenderCount(componentName: string) {
 	setup();
 

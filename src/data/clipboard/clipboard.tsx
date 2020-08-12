@@ -12,6 +12,7 @@
 	Test this in Firefox, iOS Safari, Desktop Safari, and Chrome.
 */
 
+/** Sets the clipboard using document.execCopy. Does not read from the clipboard. */
 export async function setClipboard(text: string | string[]): Promise<void> {
 	const textLines = Array.isArray(text) ? text : [text];
 

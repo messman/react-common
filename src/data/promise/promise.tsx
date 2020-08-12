@@ -1,7 +1,11 @@
 import * as React from 'react';
 import { useLatest } from '@/utility/render/render';
 
-
+/**
+ * Runs a promise. Executes a callback when complete. The callback should execute code to either restart or stop the promise.
+ * The most recent callback from the most recent render is always used.
+ * Promise is restarted based on changes to the promise function, running boolean, or additional restart arguments.
+*/
 export function usePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>, callback: (data: T | null, error: Error | null) => void, restartOn?: any[]) {
 
 	/*
@@ -42,17 +46,22 @@ export function usePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>,
 interface ControlledPromiseState {
 	/** If true, promise is in progress. */
 	isRunning: boolean;
+	/** Counter used to track restarts correctly, since nothing else would change. Seems like cheating. */
 	runCounter: number;
 }
 
+/** Output from the hook. */
 export interface ControlledPromiseOutput {
+	/** Whether the promise is running. */
 	isRunning: boolean;
-	/** Updates the initial inputs to the promise hook. Abandons any running promise. */
+	/** Abandons any running promise. Optionally restarts the promise. */
 	reset: (run: boolean) => void;
 }
 
 /**
- * Controls a promise with a set of functions.
+ * Runs a promise function. Executes a callback when complete. The most recent callback from the most recent render is always used.
+ * The callback, if supplied, returns a boolean indicating if the promise should run again. If not supplied, the promise will become idle.
+ * Returns a function to use to reset the promise.
 */
 export function useControlledPromise<T>(isRunningInitially: boolean, promiseFunc: () => Promise<T>, callback?: (data: T | null, error: Error | null) => boolean): ControlledPromiseOutput {
 
@@ -95,22 +104,30 @@ interface DataControlledPromiseState<T> {
 	error: Error | null;
 }
 
-interface DataControlledPromiseCallbackInput {
+/** Inputs to the callback function. */
+export interface DataControlledPromiseCallbackInput {
+	/** Whether the callback should be run again immediately. */
 	run: boolean;
+	/** Whether the stored data and error objects should be cleared out. If not specified, they are stored. */
 	clear?: boolean;
 }
 
-
+/** Output from the hook. */
 export interface DataControlledPromiseOutput<T> {
+	/** Whether the promise is running. */
 	isRunning: boolean;
+	/** The result data from the last time the promise was completed. May be cleared in the callback or the reset function. */
 	data: T | null;
+	/** The result error from the last time the promise was completed. May be cleared in the callback or the reset function. */
 	error: Error | null;
-	/** Updates the initial inputs to the promise hook. Abandons any running promise. */
+	/** Abandons any running promise. Resets the promise. */
 	reset: (input: DataControlledPromiseCallbackInput) => void;
 }
 
 /**
- * Controls a promise with a set of functions.
+ * Runs a promise function. Executes a callback when complete. The most recent callback from the most recent render is always used.
+ * The callback, if supplied, returns information about whether the promise should run again or store its results. If not supplied, the promise will become idle and the results are kept.
+ * Returns a function to use to reset the promise, as well as the results.
 */
 export function useDataControlledPromise<T>(isRunningInitially: boolean, promiseFunc: () => Promise<T>, callback?: (data: T | null, error: Error | null) => DataControlledPromiseCallbackInput): DataControlledPromiseOutput<T> {
 
@@ -173,11 +190,12 @@ export function useDataControlledPromise<T>(isRunningInitially: boolean, promise
 	}, [state, isRunning, innerReset]);
 }
 
+/** Can be compared to the message of the result error of a clamped promise to tell if the promise hit the maximum timeout. */
 export const clampPromiseMaximumTimeoutReason = '__promise-timed-out__';
 
 /**
  * Allows for a minimum and maximum time to be applied to a promise.
- * Returns a new promise every time.
+ * Returns a new promise each time it is called.
  */
 export function clampPromise<T>(promise: Promise<T>, minMilliseconds: number | null, maxMilliseconds: number | null): Promise<T> {
 

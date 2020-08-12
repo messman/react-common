@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useRefEffect } from '@/utility/ref-effect/ref-effect';
+import { ResizeObserver, ResizeObserverEntry } from './resize-observer';
 
 /*
 	Inspired by https://github.com/jaredLunde/react-hook/tree/master/packages/resize-observer
@@ -9,15 +10,17 @@ import { useRefEffect } from '@/utility/ref-effect/ref-effect';
 	- Apparently re-using the same one is more performant: https://groups.google.com/a/chromium.org/forum/#!msg/blink-dev/z6ienONUb5A/F5-VcUZtBAAJ
 	- According to the spec, when observer.observe is called and that element is already being observed, the first observation entry is discarded.
 		Meaning, you can only observe an element one time per observer. That's no big deal. https://www.w3.org/TR/resize-observer/#resize-observer-interface
-	- ResizeObserver is pretty new and isn't in the included TypeScript types yet. https://github.com/microsoft/TypeScript/issues/37861
 	- ResizeObserver needs to be applied to an element with no margin or border or padding.
 	- ResizeObserver doesn't really get the location right. 
 
 	You can use overflow to break collapsed margins on the div you measure.
 */
 
+/** Size of the content of the element. */
 export interface ElementSize {
+	/** Width. */
 	width: number;
+	/** Height. */
 	height: number;
 }
 
@@ -26,36 +29,13 @@ const defaultElementSize: ElementSize = {
 	height: -1
 };
 
-declare class ResizeObserver {
-	constructor(callback: ResizeObserverCallback);
-	disconnect: () => void;
-	observe: (target: Element, options?: ResizeObserverObserveOptions) => void;
-	unobserve: (target: Element) => void;
-}
-
-interface ResizeObserverObserveOptions {
-	box?: 'content-box' | 'border-box';
-}
-
-type ResizeObserverCallback = (
-	entries: ResizeObserverEntry[],
-	observer: ResizeObserver,
-) => void;
-
-interface ResizeObserverEntry {
-	readonly borderBoxSize: ResizeObserverEntryBoxSize;
-	readonly contentBoxSize: ResizeObserverEntryBoxSize;
-	readonly contentRect: DOMRectReadOnly;
-	readonly target: Element;
-}
-
-interface ResizeObserverEntryBoxSize {
-	blockSize: number;
-	inlineSize: number;
-}
-
 /**
- * Efficiently measures the width and height of an element.
+ * Efficiently measures the width and height of an element as it changes, with more than a few drawbacks. Useful for custom UI drawing.
+ * Uses the ResizeObserver API, so it responds even when the size change does not come from window resize.
+ * Drawbacks!
+ * - Browser support is not great. Works in iOS 13.5, but not iOS <= 13.3 (Early 2020). https://caniuse.com/#feat=resizeobserver
+ * - Your element should have no margin, border, or padding.
+ * - You likely need to break collapsed margins. You can do so easily with float, inline-block, flex, or non-default overflow.
  */
 export function useElementSize<T extends HTMLElement>(): [React.RefCallback<T>, ElementSize] {
 	// We know this is always the same.
@@ -152,8 +132,3 @@ function getElementSizeObserver(): ElementSizeObserver {
 	}
 	return elementSizeObserver;
 }
-
-export type UseResizeObserverCallback = (
-	entry: ResizeObserverEntry,
-	observer: ResizeObserver
-) => any;
