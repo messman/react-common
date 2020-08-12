@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { useChangeEffect } from '@/utility/render/render';
 
 
 const DocumentVisibilityContext = React.createContext<boolean>(null!);
@@ -26,7 +25,8 @@ export const DocumentVisibilityProvider: React.FC<DocumentVisibilityProviderProp
 		};
 	}, []);
 
-	useChangeEffect(() => {
+	// This runs on first render, but it doesn't matter. Same result.
+	React.useEffect(() => {
 		setIsVisible(!props.testForceHidden && !documentHidden);
 	}, [documentHidden, props.testForceHidden]);
 

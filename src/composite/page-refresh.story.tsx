@@ -206,8 +206,6 @@ const Page: React.FC<PageProps<string[]>> = (props) => {
 	const { timer, promise, lastCompleted } = promiseTimer;
 
 	React.useEffect(() => {
-
-		console.log('effect', name, timer.isStarted, promise.isRunning, StalePromiseTimerComponent[lastCompleted], isActive);
 		if (!timer.isStarted && !promise.isRunning) {
 			if (lastCompleted === StalePromiseTimerComponent.none) {
 				if (isActive) {

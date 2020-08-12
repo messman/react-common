@@ -6,11 +6,10 @@ export function getUnique(): number {
 	return globalUniqueIndex++;
 };
 
+/** Returns the same globally-unique number over the life of the component.  */
 export function useUnique() {
-	const unique = React.useRef<number>(null!);
-	// Usually unsafe because renders could be discarded; but there is no negative consequence to losing this call to getUnique on init.
-	if (unique.current === null) {
-		unique.current = getUnique();
-	}
-	return unique.current;
+	const [unique] = React.useState(() => {
+		return getUnique();
+	});
+	return unique;
 }

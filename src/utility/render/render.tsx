@@ -8,11 +8,11 @@ import * as React from 'react';
 /**
  * "Lifts" a value up to make the latest version always available to use in an effect.
  * Use sparingly to get out of complicated scenarios.
+ * Uses useEffect, not useLayoutEffect.
  */
 export function useLatest<T>(value: T): React.MutableRefObject<T> {
 	const valueRef = React.useRef<T>(value);
 
-	// useLayoutEffect to run before all useEffect.
 	React.useEffect(() => {
 		valueRef.current = value;
 	}, [value]);

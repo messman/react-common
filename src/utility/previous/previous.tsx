@@ -12,8 +12,10 @@ export function usePrevious<T>(value: T): T | undefined {
 	const valueRef = React.useRef<T | undefined>(undefined);
 
 	React.useEffect(() => {
-		previousValueRef.current = valueRef.current;
-		valueRef.current = value;
+		if (!Object.is(value, valueRef.current)) {
+			previousValueRef.current = valueRef.current;
+			valueRef.current = value;
+		}
 	}, [value]);
 
 	// If value hasn't changed, use the previous ref. If value has changed, use the more current ref.
