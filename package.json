@@ -1,6 +1,6 @@
 {
 	"name": "@messman/react-common",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Common React utilities for use in projects.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -35,7 +35,7 @@
 		"@babel/core": "^7.11.1",
 		"@babel/preset-env": "^7.11.0",
 		"@babel/preset-react": "^7.10.4",
-		"@messman/ts-webpack-builder": "^1.5.1",
+		"@messman/ts-webpack-builder": "^1.5.2",
 		"@storybook/addon-knobs": "^5.3.19",
 		"@storybook/addon-viewport": "^5.3.19",
 		"@storybook/react": "^5.3.19",
