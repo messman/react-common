@@ -39,39 +39,50 @@ const defaultElementSize: ElementSize = {
  * - You likely need to break collapsed margins. You can do so easily with float, inline-block, flex, or non-default overflow.
  * - Works on whole pixels only.
  */
-export function useElementSize<T extends HTMLElement>(callback: (width: number, height: number) => void): React.RefObject<T> {
+export function useElementSize(throttle: number, callback: (width: number, height: number, element: HTMLElement) => void): React.RefObject<any> {
 	// We know this is always the same.
-	const elementSizeObserver = getElementSizeObserver();
+	const elementSizeObserver = getGlobalElementSizeObserver();
+
+	const throttleIdRef = React.useRef(-1);
 
 	// Always use the latest version of the callback that is supplied.
 	const latestCallback = useLatestForLayoutEffect(callback);
 
-	const ref = useRefLayoutEffect<T>((element) => {
+	const ref = useRefLayoutEffect((element: HTMLElement) => {
+		if (!element) {
+			return;
+		}
+
 		let isCleanedUp = false;
 
-		function trySetSize(width: number, height: number): void {
-			latestCallback.current(Math.round(width), Math.round(height));
-		}
-
-		function onSizeChanged(entry: ResizeObserverEntry) {
+		function onChange() {
+			throttleIdRef.current = -1;
 			if (!isCleanedUp) {
-				trySetSize(entry.contentRect.width, entry.contentRect.height);
-			}
-			else {
-				console.error('Size changed for element after ref was cleared', entry);
+				latestCallback.current(element.clientWidth, element.clientHeight, element);
 			}
 		}
 
-		elementSizeObserver.subscribe(element, onSizeChanged);
-		const rect = element.getBoundingClientRect();
-		trySetSize(rect.width, rect.height);
+		elementSizeObserver.subscribe(element, (_: ResizeObserverEntry) => {
+			if (!throttle) {
+				onChange();
+			}
+			else if (throttleIdRef.current === -1) {
+				throttleIdRef.current = window.setTimeout(onChange, throttle);
+			}
+		});
+
+		onChange();
 
 		return () => {
-			isCleanedUp = true;
+			if (throttleIdRef.current !== -1) {
+				window.clearTimeout(throttleIdRef.current);
+				throttleIdRef.current = -1;
+			}
 			elementSizeObserver.unsubscribe(element);
-			latestCallback.current(defaultElementSize.width, defaultElementSize.height);
+			latestCallback.current(defaultElementSize.width, defaultElementSize.height, element);
+			isCleanedUp = true;
 		};
-	}, [elementSizeObserver]);
+	}, [elementSizeObserver, throttle]);
 
 	return ref;
 };
@@ -87,14 +98,14 @@ function noop() { };
  * - You likely need to break collapsed margins. You can do so easily with float, inline-block, flex, or non-default overflow.
  * - Works on whole pixels only.
  */
-export function useControlledElementSize<T extends HTMLElement>(callback?: (width: number, height: number) => void): [React.RefObject<T | any>, ElementSize] {
+export function useControlledElementSize(throttle: number, callback?: (width: number, height: number, element: HTMLElement) => void): [React.RefObject<any>, ElementSize] {
 
 	const [size, setSize] = React.useState(defaultElementSize);
 
 	const latestCallback = useLatestForLayoutEffect(callback || noop);
 
-	const ref = useElementSize<T>((newWidth, newHeight) => {
-		latestCallback.current(newWidth, newHeight);
+	const ref = useElementSize(throttle, (newWidth, newHeight, element) => {
+		latestCallback.current(newWidth, newHeight, element);
 		setSize((p) => {
 			if (p.width === newWidth && p.height === newHeight) {
 				return p;
@@ -115,10 +126,10 @@ interface ElementSizeObserver {
 }
 
 interface ElementSizeObserverCallback {
-	(entry: ResizeObserverEntry): void;
+	(resizeObserverEntry: any): void;
 }
 
-function createElementSizeObserver(): ElementSizeObserver {
+export function createElementSizeObserver(): ElementSizeObserver {
 	// By to my research, you can only ever target an element once.
 	// That's fine by me, as it would get too confusing anyway considering you can pass different options.
 	const callbacks: Map<Element, ElementSizeObserverCallback> = new Map();
@@ -151,7 +162,7 @@ function createElementSizeObserver(): ElementSizeObserver {
 
 let elementSizeObserver: ElementSizeObserver = null!;
 
-function getElementSizeObserver(): ElementSizeObserver {
+export function getGlobalElementSizeObserver(): ElementSizeObserver {
 	if (!elementSizeObserver) {
 		elementSizeObserver = createElementSizeObserver();
 	}
@@ -182,7 +193,7 @@ type ResizeObserverCallback = (
 	observer: ResizeObserver,
 ) => void;
 
-interface ResizeObserverEntry {
+export interface ResizeObserverEntry {
 	readonly borderBoxSize: ResizeObserverEntryBoxSize;
 	readonly contentBoxSize: ResizeObserverEntryBoxSize;
 	readonly contentRect: DOMRectReadOnly;

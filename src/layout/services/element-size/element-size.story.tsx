@@ -2,15 +2,16 @@ import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { styled, keyframes } from '@/test/styled';
 import { useControlledElementSize } from './element-size';
-import { boolean } from '@storybook/addon-knobs';
+import { boolean, number } from '@storybook/addon-knobs';
 
 export default { title: 'Layout/Services/Element Size' };
 
 export const TestAnimatingElementSize = decorate('Animating', () => {
 
+	const throttle = number('Throttle', 0);
 	const show = boolean('Show', true);
 
-	const [ref, size] = useControlledElementSize();
+	const [ref, size] = useControlledElementSize(throttle);
 
 	const sizeOutput = JSON.stringify({
 		width: Math.round(size.width),
@@ -83,7 +84,9 @@ const ResizingContainer = styled.div`
 
 export const TestResizingWindowElementSize = decorate('Resizing Window', () => {
 
-	const [ref, size] = useControlledElementSize();
+	const throttle = number('Throttle', 0);
+
+	const [ref, size] = useControlledElementSize(throttle);
 
 	const width = Math.round(size.width) - 20;
 	const height = Math.round(size.height) - 20;

@@ -1,64 +1,107 @@
 import * as React from 'react';
+import { getGlobalElementSizeObserver, ResizeObserverEntry } from '../element-size/element-size';
+import { useRefLayoutEffect } from '@/utility/ref-effect/ref-effect';
 
-export interface ScrollOutput {
-	scrollTop: number;
+export interface ElementScroll {
+	/** How far from the left the element is scrolled. */
 	scrollLeft: number;
+	/** How far from the top the element is scrolled. */
+	scrollTop: number;
+	/** The element's content width. */
+	width: number;
+	/** The element's content height. */
+	height: number;
+	/**
+	 * The maximum possible value for scrolling from the left.
+	 * Add to the element width to get the full scrollWidth.
+	 * */
+	scrollLeftMax: number;
+	/**
+	 * The maximum possible value for scrolling from the top.
+	 * Add to the element height to get the full scrollHeight.
+	 * */
+	scrollTopMax: number;
 }
 
-export function useElementScroll<T extends HTMLElement>(ref: React.MutableRefObject<T | null>, throttleMilliseconds: number | null): ScrollOutput {
-	const [scrollOutput, setScrollOutput] = React.useState<ScrollOutput>({
-		scrollTop: ref.current?.scrollTop || 0,
-		scrollLeft: ref.current?.scrollLeft || 0
-	});
+const defaultElementScroll: ElementScroll = {
+	scrollLeft: 0,
+	scrollTop: 0,
+	width: -1,
+	height: -1,
+	scrollLeftMax: 0,
+	scrollTopMax: 0
+};
 
-	const throttleTimeoutId = React.useRef(-1);
-	const timeout = (isNaN(throttleMilliseconds!) || throttleMilliseconds! < 10) ? 10 : throttleMilliseconds;
+/**
+	Measures the scroll data for an element and updates when changed.
+	Also hooks into ResizeObserver to report on width and height.
+	See useElementSize for drawbacks.
+ */
+export function useElementScroll(throttle: number): [React.RefObject<any>, ElementScroll] {
 
-	function checkScroll(event: Event | null): void {
-		if (!ref.current) {
+	const [elementScroll, setElementScroll] = React.useState(defaultElementScroll);
+
+	// We know this is always the same.
+	const elementSizeObserver = getGlobalElementSizeObserver();
+
+	const throttleIdRef = React.useRef(-1);
+
+	const ref = useRefLayoutEffect((element: HTMLElement) => {
+		if (!element) {
 			return;
 		}
-		if (event && event.target !== ref.current) {
-			return;
+		let isCleanedUp = false;
+
+		function onChange() {
+			if (throttle === 0) {
+				updateState();
+			}
+			else if (throttleIdRef.current === -1) {
+				throttleIdRef.current = window.setTimeout(updateState, throttle);
+			}
 		}
-		if (throttleTimeoutId.current !== -1) {
-			return;
-		}
-		throttleTimeoutId.current = window.setTimeout(function () {
-			throttleTimeoutId.current = -1;
-			if (!ref.current) {
+
+		function updateState() {
+			throttleIdRef.current = -1;
+			if (isCleanedUp) {
 				return;
 			}
-			const newScrollTop = ref.current.scrollTop;
-			const newScrollLeft = ref.current.scrollLeft;
-			setScrollOutput((p) => {
-				if (newScrollTop === p.scrollTop && newScrollLeft === p.scrollLeft) {
-					return p;
-				}
-				return {
-					scrollTop: newScrollTop,
-					scrollLeft: newScrollLeft,
-				};
+			const { scrollLeft, scrollTop, scrollWidth, scrollHeight, clientHeight, clientWidth } = element;
+			const scrollLeftMax = scrollWidth - clientWidth;
+			const scrollTopMax = scrollHeight - clientHeight;
+			setElementScroll({
+				width: clientWidth,
+				height: clientHeight,
+				scrollLeft: scrollLeft,
+				scrollTop: scrollTop,
+				scrollLeftMax: scrollLeftMax,
+				scrollTopMax: scrollTopMax
 			});
-		}, timeout);
-	}
-
-	React.useEffect(() => {
-		function handleChange(event: Event) {
-			checkScroll(event);
 		}
 
-		checkScroll(null);
-
-		if (ref.current) {
-			ref.current.onscroll = handleChange;
-		}
-		return function () {
-			if (ref.current) {
-				ref.current.onscroll = null;
+		elementSizeObserver.subscribe(element, (_: ResizeObserverEntry) => {
+			onChange();
+		});
+		element.onscroll = function (e: Event) {
+			if (e.target !== element) {
+				return;
 			}
+			onChange();
 		};
-	}, [ref.current]);
 
-	return scrollOutput;
+		updateState();
+
+		return () => {
+			if (throttleIdRef.current !== -1) {
+				window.clearTimeout(throttleIdRef.current);
+				throttleIdRef.current = -1;
+			}
+			elementSizeObserver.unsubscribe(element);
+			element.onscroll = null;
+			setElementScroll(defaultElementScroll);
+			isCleanedUp = true;
+		};
+	}, [elementSizeObserver, throttle]);
+
+	return [ref, elementScroll];
 };

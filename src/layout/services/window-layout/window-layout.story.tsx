@@ -3,9 +3,9 @@ import { decorate } from '@/test/decorate';
 import { useWindowLayout, DefaultLayoutBreakpoint, LayoutOrientation } from './window-layout';
 import { useWindowDimensions } from './window-dimensions';
 
-export default { title: 'Layout/Services' };
+export default { title: 'Layout/Services/Window Layout' };
 
-export const TestResponsive = decorate('Responsive', () => {
+export const TestWindowLayout = decorate('Window Layout', () => {
 
 	const windowDimensions = useWindowDimensions();
 	const windowLayout = useWindowLayout();
