@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { getGlobalElementSizeObserver, ResizeObserverEntry } from '../element-size/element-size';
 import { useRefLayoutEffect } from '@/utility/ref-effect/ref-effect';
+import { useLatestForLayoutEffect } from '@/utility/render/render';
 
 export interface ElementScroll {
 	/** How far from the left the element is scrolled. */
@@ -32,17 +33,21 @@ const defaultElementScroll: ElementScroll = {
 	scrollTopMax: 0
 };
 
+
+function noop() { }
 /**
 	Measures the scroll data for an element and updates when changed.
 	Also hooks into ResizeObserver to report on width and height.
 	See useElementSize for drawbacks.
  */
-export function useElementScroll(throttle: number): [React.RefObject<any>, ElementScroll] {
+export function useElementScroll(throttle: number, callback?: (elementScroll: ElementScroll, element: HTMLElement) => void): [React.RefObject<any>, ElementScroll] {
 
 	const [elementScroll, setElementScroll] = React.useState(defaultElementScroll);
 
 	// We know this is always the same.
 	const elementSizeObserver = getGlobalElementSizeObserver();
+
+	const latestCallback = useLatestForLayoutEffect(callback || noop);
 
 	const throttleIdRef = React.useRef(-1);
 
@@ -69,14 +74,16 @@ export function useElementScroll(throttle: number): [React.RefObject<any>, Eleme
 			const { scrollLeft, scrollTop, scrollWidth, scrollHeight, clientHeight, clientWidth } = element;
 			const scrollLeftMax = scrollWidth - clientWidth;
 			const scrollTopMax = scrollHeight - clientHeight;
-			setElementScroll({
+			const newState: ElementScroll = {
 				width: clientWidth,
 				height: clientHeight,
 				scrollLeft: Math.max(scrollLeft, 0),
 				scrollTop: Math.max(scrollTop, 0),
 				scrollLeftMax: Math.max(scrollLeftMax, 0),
 				scrollTopMax: Math.max(scrollTopMax, 0)
-			});
+			};
+			latestCallback.current(newState, element);
+			setElementScroll(newState);
 		}
 
 		elementSizeObserver.subscribe(element, (_: ResizeObserverEntry) => {
