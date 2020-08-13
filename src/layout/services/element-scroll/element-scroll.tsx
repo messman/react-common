@@ -72,10 +72,10 @@ export function useElementScroll(throttle: number): [React.RefObject<any>, Eleme
 			setElementScroll({
 				width: clientWidth,
 				height: clientHeight,
-				scrollLeft: scrollLeft,
-				scrollTop: scrollTop,
-				scrollLeftMax: scrollLeftMax,
-				scrollTopMax: scrollTopMax
+				scrollLeft: Math.max(scrollLeft, 0),
+				scrollTop: Math.max(scrollTop, 0),
+				scrollLeftMax: Math.max(scrollLeftMax, 0),
+				scrollTopMax: Math.max(scrollTopMax, 0)
 			});
 		}
 
