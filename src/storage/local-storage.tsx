@@ -64,7 +64,7 @@ export function get<T>(key: string): T | undefined {
 			return item.x;
 		}
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 	return undefined;
 }
@@ -80,7 +80,7 @@ export function getItem<T>(key: string): LocalStorageItem<T> | undefined {
 			return JSON.parse(stringItem) as LocalStorageItem<T>;
 		}
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 	return undefined;
 }
@@ -98,7 +98,7 @@ export function set<T>(key: string, value: T, version: string): boolean {
 		};
 		window.localStorage.setItem(key, JSON.stringify(item));
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 		return false;
 	}
 	return true;
