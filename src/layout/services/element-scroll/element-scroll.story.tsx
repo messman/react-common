@@ -19,10 +19,6 @@ export const TestAnimatingElementSize = decorate('Animating', () => {
 			</Scroller>
 		</Container>
 	);
-
-	return (
-		<p>Not showing.</p>
-	);
 });
 
 const Container = styled.div`
@@ -37,9 +33,10 @@ interface ScrollerProps {
 }
 
 const Scroller = styled.div<ScrollerProps>`
-	position: flex;
+	display: flex;
 	flex-direction: column;
 	width: 100%;
 	height: ${p => p.heightFactor * 100}%;
-	overflow: auto;
+	background: rgb(6,169,203);
+	background: linear-gradient(180deg, rgba(6,169,203,1) 0%, rgba(9,9,121,1) 100%);
 `;

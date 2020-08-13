@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useLatest } from '@/utility/render/render';
+import { useLatestForEffect } from '@/utility/render/render';
 
 
 export function useTruthyTimer(isStarted: boolean, timeout: number, isTruthy: boolean, callback: () => void, restartOn?: any[]): void {
@@ -8,7 +8,7 @@ export function useTruthyTimer(isStarted: boolean, timeout: number, isTruthy: bo
 		Sure, we could always restart the timer when the callback changes, but that would break down the precision of the timer.
 		So for this special case, always hold the most recent version of the callback just to use at the end.
 	*/
-	const latestCallback = useLatest(callback);
+	const latestCallback = useLatestForEffect(callback);
 
 	// We only need to have the timeout running when we are both started and truthy.
 	const isStartedInternalTimer = isStarted && isTruthy;

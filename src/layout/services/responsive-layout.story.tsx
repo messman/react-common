@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { decorate } from '@/test/decorate';
-import { useResponsiveLayout, LayoutBreakpoint, LayoutMode, isInvalidLayoutForApplication } from './responsive-layout';
+import { useResponsiveLayout, LayoutBreakpoint, LayoutMode } from './responsive-layout';
 
 export default { title: 'Layout/Services' };
 
@@ -8,7 +8,7 @@ export const TestResponsive = decorate('Responsive', () => {
 
 	const responsiveLayout = useResponsiveLayout();
 	let invalidText: JSX.Element | null = null;
-	if (isInvalidLayoutForApplication(responsiveLayout)) {
+	if (responsiveLayout.widthBreakpoint < LayoutBreakpoint.compact) {
 		invalidText = <p>Invalid Layout</p>;
 	}
 

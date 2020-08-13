@@ -10,7 +10,7 @@ import * as React from 'react';
  * Use sparingly to get out of complicated scenarios.
  * Uses useEffect, not useLayoutEffect.
  */
-export function useLatest<T>(value: T): React.MutableRefObject<T> {
+export function useLatestForEffect<T>(value: T): React.MutableRefObject<T> {
 	const valueRef = React.useRef<T>(value);
 
 	React.useEffect(() => {
@@ -20,24 +20,20 @@ export function useLatest<T>(value: T): React.MutableRefObject<T> {
 	return valueRef;
 }
 
-// /*
-// 	Completely safe to use, but ask yourself why you feel like you need to use this.
-// 	The first render is not supposed to be anything special.
-// */
-// /**
-//  * A ref to a boolean that is true for the first render. Not valid for use in effects.
-//  * Use sparingly to get out of complicated scenarios.
-//  */
-// export function useIsFirstRender(): boolean {
-// 	const isFirstRender = useLatest(true);
+/**
+ * "Lifts" a value up to make the latest version always available to use in an effect.
+ * Use sparingly to get out of complicated scenarios.
+ * Uses useEffect, not useLayoutEffect.
+ */
+export function useLatestForLayoutEffect<T>(value: T): React.MutableRefObject<T> {
+	const valueRef = React.useRef<T>(value);
 
-// 	// useLayoutEffect to run before all useEffect.
-// 	React.useEffect(() => {
-// 		isFirstRender.current = false;
-// 	}, []);
+	React.useLayoutEffect(() => {
+		valueRef.current = value;
+	}, [value]);
 
-// 	return isFirstRender.current;
-// }
+	return valueRef;
+}
 
 /*
 	Like useEffect, but doesn't run on that first time.

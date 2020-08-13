@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useLatest } from '@/utility/render/render';
+import { useLatestForEffect } from '@/utility/render/render';
 
 /**
  * Runs a promise. Executes a callback when complete. The callback should execute code to either restart or stop the promise.
@@ -12,7 +12,7 @@ export function usePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>,
 		The callback could change every render, and we don't know when the promise will finish.
 		So for this special case, always hold the most recent version of the callback just to use at the end.
 	*/
-	const latestCallback = useLatest(callback);
+	const latestCallback = useLatestForEffect(callback);
 
 	restartOn = restartOn || [];
 

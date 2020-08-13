@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useRefEffect } from '@/utility/ref-effect/ref-effect';
-import { ResizeObserver, ResizeObserverEntry } from './resize-observer';
+import { useRefLayoutEffect } from '@/utility/ref-effect/ref-effect';
+import { useLatestForLayoutEffect } from '@/utility/render/render';
 
 /*
 	Inspired by https://github.com/jaredLunde/react-hook/tree/master/packages/resize-observer
@@ -30,44 +30,36 @@ const defaultElementSize: ElementSize = {
 };
 
 /**
- * Efficiently measures the width and height of an element as it changes, with more than a few drawbacks. Useful for custom UI drawing.
+ * Efficiently measures the width and height of an element as it changes. Useful for custom UI drawing.
+ * This hook responds to all events and does not remember previous sizes.
  * Uses the ResizeObserver API, so it responds even when the size change does not come from window resize.
- * Drawbacks!
+ * Drawbacks:
  * - Browser support is not great. Works in iOS 13.5, but not iOS <= 13.3 (Early 2020). https://caniuse.com/#feat=resizeobserver
  * - Your element should have no margin, border, or padding.
  * - You likely need to break collapsed margins. You can do so easily with float, inline-block, flex, or non-default overflow.
+ * - Works on whole pixels only.
  */
-export function useElementSize<T extends HTMLElement>(): [React.RefCallback<T>, ElementSize] {
+export function useElementSize<T extends HTMLElement>(callback: (width: number, height: number) => void): React.RefObject<T> {
 	// We know this is always the same.
 	const elementSizeObserver = getElementSizeObserver();
 
-	const [size, setSize] = React.useState(defaultElementSize);
+	// Always use the latest version of the callback that is supplied.
+	const latestCallback = useLatestForLayoutEffect(callback);
 
-	// Used to prevent events handled after cleanup.
-	const isHandlingEvents = React.useRef(false);
-
-	const ref = useRefEffect((element) => {
-		isHandlingEvents.current = true;
+	const ref = useRefLayoutEffect<T>((element) => {
+		let isCleanedUp = false;
 
 		function trySetSize(width: number, height: number): void {
-			const roundedWidth = Math.round(width);
-			const roundedHeight = Math.round(height);
-			setSize((p) => {
-				if (p.width === roundedWidth && p.height === roundedHeight) {
-					return p;
-				}
-				return {
-					width: roundedWidth,
-					height: roundedHeight
-				};
-			});
+			latestCallback.current(Math.round(width), Math.round(height));
 		}
 
 		function onSizeChanged(entry: ResizeObserverEntry) {
-			if (!isHandlingEvents.current) {
-				return;
+			if (!isCleanedUp) {
+				trySetSize(entry.contentRect.width, entry.contentRect.height);
 			}
-			trySetSize(entry.contentRect.width, entry.contentRect.height);
+			else {
+				console.error('Size changed for element after ref was cleared', entry);
+			}
 		}
 
 		elementSizeObserver.subscribe(element, onSizeChanged);
@@ -75,11 +67,44 @@ export function useElementSize<T extends HTMLElement>(): [React.RefCallback<T>, 
 		trySetSize(rect.width, rect.height);
 
 		return () => {
-			isHandlingEvents.current = false;
+			isCleanedUp = true;
 			elementSizeObserver.unsubscribe(element);
-			setSize(defaultElementSize);
+			latestCallback.current(defaultElementSize.width, defaultElementSize.height);
 		};
 	}, [elementSizeObserver]);
+
+	return ref;
+};
+
+function noop() { };
+/**
+ * Efficiently measures the width and height of an element as it changes, with more than a few drawbacks. Useful for custom UI drawing.
+ * This hook only updates size when the width or height changes from the previous values.
+ * Uses the ResizeObserver API, so it responds even when the size change does not come from window resize.
+ * Drawbacks:
+ * - Browser support is not great. Works in iOS 13.5, but not iOS <= 13.3 (Early 2020). https://caniuse.com/#feat=resizeobserver
+ * - Your element should have no margin, border, or padding.
+ * - You likely need to break collapsed margins. You can do so easily with float, inline-block, flex, or non-default overflow.
+ * - Works on whole pixels only.
+ */
+export function useControlledElementSize<T extends HTMLElement>(callback?: (width: number, height: number) => void): [React.RefObject<T | any>, ElementSize] {
+
+	const [size, setSize] = React.useState(defaultElementSize);
+
+	const latestCallback = useLatestForLayoutEffect(callback || noop);
+
+	const ref = useElementSize<T>((newWidth, newHeight) => {
+		latestCallback.current(newWidth, newHeight);
+		setSize((p) => {
+			if (p.width === newWidth && p.height === newHeight) {
+				return p;
+			}
+			return {
+				width: newWidth,
+				height: newHeight
+			};
+		});
+	});
 
 	return [ref, size];
 };
@@ -131,4 +156,40 @@ function getElementSizeObserver(): ElementSizeObserver {
 		elementSizeObserver = createElementSizeObserver();
 	}
 	return elementSizeObserver;
+}
+
+
+//////////////////////
+
+/*
+	TypeScript doesn't contain these typings yet. Remove when they have them.
+	https://github.com/microsoft/TypeScript/issues/37861
+*/
+
+declare class ResizeObserver {
+	constructor(callback: ResizeObserverCallback);
+	disconnect: () => void;
+	observe: (target: Element, options?: ResizeObserverObserveOptions) => void;
+	unobserve: (target: Element) => void;
+}
+
+interface ResizeObserverObserveOptions {
+	box?: 'content-box' | 'border-box';
+}
+
+type ResizeObserverCallback = (
+	entries: ResizeObserverEntry[],
+	observer: ResizeObserver,
+) => void;
+
+interface ResizeObserverEntry {
+	readonly borderBoxSize: ResizeObserverEntryBoxSize;
+	readonly contentBoxSize: ResizeObserverEntryBoxSize;
+	readonly contentRect: DOMRectReadOnly;
+	readonly target: Element;
+}
+
+interface ResizeObserverEntryBoxSize {
+	blockSize: number;
+	inlineSize: number;
 }
