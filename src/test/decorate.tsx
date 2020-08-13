@@ -2,8 +2,8 @@ import * as React from 'react';
 import { themes, LocalStorageThemeProvider, useLocalStorageThemeProvider } from './theme';
 import { select, withKnobs, boolean } from '@storybook/addon-knobs';
 import { DocumentVisibilityProvider } from '@/lifecycle/visibility/visibility';
-import { WindowDimensionsProvider } from '@/layout/services/window-dimensions';
-import { ResponsiveLayoutProvider, defaultLowerBreakpoints } from '@/layout/services/responsive-layout';
+import { WindowDimensionsProvider } from '@/layout/services/window-layout/window-dimensions';
+import { WindowLayoutProvider, defaultLowerBreakpoints } from '@/layout/services/window-layout/window-layout';
 
 export interface StoryComponent {
 	(): JSX.Element,
@@ -72,9 +72,9 @@ const Wrapper: React.FC = (props) => {
 		<DocumentVisibilityProvider testForceHidden={forceHidden}>
 			<LocalStorageThemeProvider value={localStorageThemeProvider}>
 				<WindowDimensionsProvider>
-					<ResponsiveLayoutProvider lowerBreakpoints={defaultLowerBreakpoints}>
+					<WindowLayoutProvider lowerBreakpoints={defaultLowerBreakpoints}>
 						{props.children}
-					</ResponsiveLayoutProvider>
+					</WindowLayoutProvider>
 				</WindowDimensionsProvider>
 			</LocalStorageThemeProvider>
 		</DocumentVisibilityProvider>
