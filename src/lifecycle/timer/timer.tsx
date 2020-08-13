@@ -1,7 +1,11 @@
 import * as React from 'react';
 import { useLatestForEffect } from '@/utility/render/render';
 
-
+/**
+ * Creates a timer with setTimeout. The timer callback will only trigger when the timer completes and the argument is truthy.
+ * When combined with a boolean for document visibility (document.hidden), this timer will persist across minimization, switched tabs, etc.
+ * Callback should change inputs such that timer will either restart or be turned off.
+ */
 export function useTruthyTimer(isStarted: boolean, timeout: number, isTruthy: boolean, callback: () => void, restartOn?: any[]): void {
 
 	/*
@@ -51,6 +55,12 @@ export interface ControlledTruthyTimerOutput {
 	reset: (start: boolean) => void;
 }
 
+/**
+ * Creates a timer with setTimeout. The timer callback will only trigger when the timer completes and the argument is truthy.
+ * When combined with a boolean for document visibility (document.hidden), this timer will persist across minimization, switched tabs, etc.
+ * Callback, if supplied, should return a boolean to indicate whether to run the timer again.
+ * Returns functions for resetting the timer.
+ */
 export function useControlledTruthyTimer(isStartedInitially: boolean, timeout: number, isTruthy: boolean, callback?: () => boolean): ControlledTruthyTimerOutput {
 
 	const [state, setState] = React.useState<ControlledTruthyTimerState>({

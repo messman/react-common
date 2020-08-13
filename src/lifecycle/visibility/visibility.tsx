@@ -1,6 +1,5 @@
 import * as React from 'react';
 
-
 const DocumentVisibilityContext = React.createContext<boolean>(null!);
 export const useDocumentVisibility = () => React.useContext(DocumentVisibilityContext);
 
@@ -9,6 +8,7 @@ export interface DocumentVisibilityProviderProps {
 	testForceHidden?: boolean;
 }
 
+/** Provides access to the document hidden state or a test value that mocks the hidden state. */
 export const DocumentVisibilityProvider: React.FC<DocumentVisibilityProviderProps> = (props) => {
 
 	const [documentHidden, setDocumentHidden] = React.useState(document.hidden);

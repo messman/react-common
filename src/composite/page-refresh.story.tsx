@@ -3,7 +3,7 @@ import { decorate } from '@/test/decorate';
 import { number, select, boolean } from '@storybook/addon-knobs';
 import { useTruthyTimer } from '@/lifecycle/timer/timer';
 import { createContextConsumer } from '@/utility/context/context';
-import { FlexRoot, FlexRow, FlexColumn } from '@/layout/ui/flex';
+import { FlexRoot, FlexRow, FlexColumn } from '@/layout/ui/flex/flex';
 import styled from 'styled-components';
 import { getPromiseStatus, getTruthyTimerStatus } from '@/test/shared';
 import { clampPromise } from '@/data/promise/promise';

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { FlexRoot } from './flex';
+import { FlexRoot } from '../flex/flex';
 import styled from 'styled-components';
 
 export interface OverlayProps {

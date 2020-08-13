@@ -2,7 +2,7 @@ import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { styled } from '@/test/styled';
 import { number } from '@storybook/addon-knobs';
-import { Flex, FlexRoot } from '@/layout/ui/flex';
+import { Flex, FlexRoot } from '@/layout/ui/flex/flex';
 import { useElementScroll, ElementScroll } from './element-scroll';
 import { usePrevious } from '@/utility/previous/previous';
 

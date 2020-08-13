@@ -2,13 +2,9 @@ import * as React from 'react';
 
 /*
 	Essentially, it's hard to know when a ref is about to be gone. Maybe we need to clean up with it.
-	To handle that, we use a combination of useRef and useCallback for a callback ref.
-
-	Note the downside:
-	This callback function is run between the render and effect phases, so it can't always use values from other effects.
-	To fix this, you might want your effect to set the element to a state variable, then use a separate useEffect / useLayoutEffect
-	to handle your logic (though that costs a render).
-
+	To handle that, we have two options:
+	A: a combination of refs and useLayoutEffect.
+	B: a combination of refs and useCallback for a callback ref.
 
 	Inspiration / explanation of issues:
 	https://github.com/facebook/react/issues/15176

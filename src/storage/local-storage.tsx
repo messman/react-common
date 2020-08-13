@@ -8,6 +8,7 @@ export interface LocalStorageItem<T> {
 	v: string;
 }
 
+/** Encapsulates common LocalStorage methods behind a key prefix and a version string. */
 export interface LocalStorageNamespace {
 	keys: () => string[];
 	get: typeof get;
@@ -85,7 +86,9 @@ export function getItem<T>(key: string): LocalStorageItem<T> | undefined {
 	return undefined;
 }
 
-/** Sets to LocalStorage. */
+/**
+ * Sets to LocalStorage. If the value is undefined, the LocalStorage entry is deleted.
+ */
 export function set<T>(key: string, value: T, version: string): boolean {
 	if (value === undefined) {
 		remove(key);
@@ -109,14 +112,7 @@ export function remove(key: string): void {
 	window.localStorage.removeItem(key);
 }
 
-export function change<T>(key: string, oldValue: T | undefined, newValue: T | undefined, version: string): boolean {
-	if (Object.is(oldValue, newValue)) {
-		return false;
-	}
-	return set(key, newValue, version);
-}
-
-
+/** Returns keys to all LocalStorage entries. */
 export function keys(): string[] {
 	const length = window.localStorage.length;
 	const keys: string[] = [];
@@ -128,7 +124,11 @@ export function keys(): string[] {
 
 export type LocalStorageMigration<T> = (value: T | undefined, item: LocalStorageItem<T> | undefined) => T | undefined;
 
-
+/**
+ * Retrieves a value from LocalStorage, but also runs a migration function that may modify the output and the LocalStorage value.
+ * If the migration function returns a modified value, that value is saved back to LocalStorage.
+ * If the migration function returns undefined, the LocalStorage entry is deleted.
+ */
 export function getWithMigration<T>(key: string, migration: LocalStorageMigration<T>, version: string): T | undefined {
 	const item = getItem<T>(key);
 	const value = item?.x || undefined;
@@ -143,7 +143,8 @@ export type UseLocalStorageReturn<T> = [T | undefined, (value: T | undefined) =>
 
 /**
  * Creates a state variable that also saves to LocalStorage.
- * Undefined values are not saved.
+ * If the migration function returns a modified value, that value is saved back to LocalStorage.
+ * If the migration function returns undefined, the LocalStorage entry is deleted.
  * Initial arguments are frozen for the life of the consuming component.
 */
 export function useLocalStorage<T>(key: string, migrationOnGet: LocalStorageMigration<T>, version: string): UseLocalStorageReturn<T> {

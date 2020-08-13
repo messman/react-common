@@ -6,7 +6,7 @@ export interface FlexProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /*
-	Note on flex value (flex={0} and flex='none') TL;DR: Use flex='none'
+	Note on flex value (flex={0} and flex='none') TL;DR: Try flex='none'
 	Flex '0' means '0 1 0%'
 		use the width/height of the inner content, but ignore width and height set on the element
 	Flex 'none' means '0 0 auto'

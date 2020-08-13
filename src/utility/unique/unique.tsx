@@ -2,6 +2,7 @@ import * as React from 'react';
 
 let globalUniqueIndex = 0;
 
+/** Returns a globally-unique number through an incrementing index. */
 export function getUnique(): number {
 	return globalUniqueIndex++;
 };
