@@ -32,14 +32,14 @@
 		"styled-components": "^5.1.1"
 	},
 	"devDependencies": {
-		"@babel/core": "^7.11.0",
+		"@babel/core": "^7.11.1",
 		"@babel/preset-env": "^7.11.0",
 		"@babel/preset-react": "^7.10.4",
-		"@messman/ts-webpack-builder": "^1.5.0",
+		"@messman/ts-webpack-builder": "^1.5.1",
 		"@storybook/addon-knobs": "^5.3.19",
 		"@storybook/addon-viewport": "^5.3.19",
 		"@storybook/react": "^5.3.19",
-		"@types/react": "^16.9.44",
+		"@types/react": "^16.9.46",
 		"@types/react-dom": "^16.9.8",
 		"@types/styled-components": "^5.1.2",
 		"babel-loader": "^8.1.0",
