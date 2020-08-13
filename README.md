@@ -2,6 +2,10 @@
 
 _**Not stable. Not recommended for use by anyone other than the creator. I will likely not respond to feature requests.**_
 
+`npm install --save @messman/react-common`
+
+View on [npm](https://www.npmjs.com/package/@messman/react-common) or on [GitHub](https://github.com/messman/react-common).
+
 Common tools for React that I've found myself copy-pasting to different projects, tweaking each time. Better to keep it all in one spot with centralized tracking and testing. Also gives me more practice in writing my own hooks and publishing my own packages.
 
 ## Focus
