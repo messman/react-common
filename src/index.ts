@@ -12,7 +12,7 @@ export { useRenderCount, useRenderDebug } from './debug/render';
 export { ElementScroll, useElementScroll } from './layout/services/element-scroll/element-scroll';
 export { ElementSize, useElementSize, ResizeObserverEntry, createElementSizeObserver, useControlledElementSize, getGlobalElementSizeObserver } from './layout/services/element-size/element-size';
 export { WindowDimensions, WindowDimensionsProvider, useWindowDimensions } from './layout/services/window-layout/window-dimensions';
-export { DefaultLayoutBreakpoint, LayoutOrientation, WindowLayout, WindowLayoutProvider, WindowLayoutProviderProps, useWindowLayout } from './layout/services/window-layout/window-layout';
+export { DefaultLayoutBreakpoint, LayoutOrientation, WindowLayout, WindowLayoutProvider, WindowLayoutProviderProps, useWindowLayout, defaultLowerBreakpoints } from './layout/services/window-layout/window-layout';
 export { Flex, FlexColumn, FlexParent, FlexProps, FlexRoot, FlexRow } from './layout/ui/flex/flex';
 export { Overlay, OverlayProps } from './layout/ui/overlay/overlay';
 
