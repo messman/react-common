@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { number, select, boolean } from '@storybook/addon-knobs';
-import { useTruthyTimer } from '@/lifecycle/timer/timer';
+import { useTruthyTimer, getDebugTruthyTimerStatus } from '@/lifecycle/timer/timer';
 import { createContextConsumer } from '@/utility/context/context';
 import { FlexRoot, FlexRow, FlexColumn } from '@/layout/ui/flex/flex';
 import styled from 'styled-components';
-import { getPromiseStatus, getTruthyTimerStatus } from '@/test/shared';
+import { getPromiseStatus } from '@/test/shared';
 import { clampPromise } from '@/data/promise/promise';
 import { useDocumentVisibility } from '@/lifecycle/visibility/visibility';
 import { seconds } from '@/utility/time/time';
@@ -71,7 +71,10 @@ export const TestPageRefresh = decorate('Page Refresh', () => {
 
 	const documentVisibility = useDocumentVisibility();
 
-	useTruthyTimer(!updateTimerIsCompleted, updateTimeout, documentVisibility, () => {
+	const updateTimer = useTruthyTimer({
+		isStarted: true,
+		timeout: updateTimeout
+	}, documentVisibility, () => {
 		console.log('update timer completed');
 		setUpdateTimerIsCompleted(true);
 	});
@@ -107,7 +110,7 @@ export const TestPageRefresh = decorate('Page Refresh', () => {
 		content = <PageManager activeIndex={activePageIndex} />;
 	}
 	else {
-		content = <OtherView timerStatus={getTruthyTimerStatus(!updateTimerIsCompleted, updateTimeout, documentVisibility)} />;
+		content = <OtherView timerStatus={getDebugTruthyTimerStatus(updateTimer)} />;
 	}
 
 	let windowReloadNotice: JSX.Element | null = null;
@@ -200,8 +203,6 @@ const Page: React.FC<PageProps<string[]>> = (props) => {
 	// In a real-world example, you likely don't have this - we have it here for testing. So disregard the logic around this.
 	const useRefreshButtonOnTimerExpiration = useRefreshButtonOnTimerExpirationConsumer();
 
-	const documentVisibility = useDocumentVisibility();
-
 	const promiseTimer = consumer();
 	const { timer, promise, lastCompleted } = promiseTimer;
 
@@ -226,7 +227,9 @@ const Page: React.FC<PageProps<string[]>> = (props) => {
 			}
 			else if (lastCompleted === StalePromiseTimerComponent.promise) {
 				// NO check for active here, in case user switched off before ever seeing the old data.
-				timer.reset(true);
+				timer.reset({
+					isStarted: true
+				});
 			}
 		}
 
@@ -270,7 +273,7 @@ const Page: React.FC<PageProps<string[]>> = (props) => {
 						<p>{useRefreshButtonOnTimerExpiration ? 'Using Refresh Button' : 'Using Instant Reload'}</p>
 					</Center>
 					<hr />
-					<p>Timer: {getTruthyTimerStatus(timer.isStarted, null, documentVisibility)}</p>
+					<p>Timer: {getDebugTruthyTimerStatus(timer)}</p>
 					<p>Promise: {getPromiseStatus(promise.isRunning, promise.data, promise.error)}</p>
 					{reloadButton}
 					{postsRender}

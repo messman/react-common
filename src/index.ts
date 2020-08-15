@@ -17,7 +17,7 @@ export { Flex, FlexColumn, FlexParent, FlexProps, FlexRoot, FlexRow } from './la
 export { Overlay, OverlayProps } from './layout/ui/overlay/overlay';
 
 // Lifecycle
-export { ControlledTruthyTimerOutput, useControlledTruthyTimer, useTruthyTimer } from './lifecycle/timer/timer';
+export { useTruthyTimer, TruthyTimerOutput, getDebugTruthyTimerStatus, TruthyTimerInitialInput, TruthyTimerResetInput } from './lifecycle/timer/timer';
 export { DocumentVisibilityProvider, DocumentVisibilityProviderProps, useDocumentVisibility } from './lifecycle/visibility/visibility';
 
 // Storage

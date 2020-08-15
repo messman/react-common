@@ -90,7 +90,6 @@ export function useElementSize(throttle: number, callback: (width: number, heigh
 function noop() { };
 /**
  * Efficiently measures the width and height of an element as it changes, with more than a few drawbacks. Useful for custom UI drawing.
- * This hook only updates size when the width or height changes from the previous values.
  * Uses the ResizeObserver API, so it responds even when the size change does not come from window resize.
  * Drawbacks:
  * - Browser support is not great. Works in iOS 13.5, but not iOS <= 13.3 (Early 2020). https://caniuse.com/#feat=resizeobserver

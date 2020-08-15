@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useDataControlledPromise, DataControlledPromiseOutput } from '@/data/promise/promise';
-import { useControlledTruthyTimer, ControlledTruthyTimerOutput } from '@/lifecycle/timer/timer';
+import { useTruthyTimer, TruthyTimerOutput } from '@/lifecycle/timer/timer';
 
 /** Components used with the Stale Promise Timer. */
 export enum StalePromiseTimerComponent {
@@ -33,7 +33,7 @@ export interface StalePromiseTimerInput<T> {
 /** Outputs from the hook, used to set the UI and move between states. */
 export interface StalePromiseTimerOutput<T> {
 	/** Contains ways to restart or end the timer. */
-	timer: ControlledTruthyTimerOutput;
+	timer: TruthyTimerOutput;
 	/** Contains ways to restart or end the promise. */
 	promise: DataControlledPromiseOutput<T>;
 	/** The last completed component - timer, promise, or neither. */
@@ -51,14 +51,19 @@ export function useStalePromiseTimer<T>(input: StalePromiseTimerInput<T>): Stale
 	const isPromiseRunningInitially = initialAction === StalePromiseTimerComponent.promise;
 	const [lastCompletedComponent, setLastCompletedComponent] = React.useState<StalePromiseTimerComponent>(StalePromiseTimerComponent.none);
 
-	const timerOutput = useControlledTruthyTimer(isTimerStartedInitially, timerTimeout, isTimerTruthy, () => {
+	const timerOutput = useTruthyTimer({
+		isStarted: isTimerStartedInitially,
+		timeout: timerTimeout
+	}, isTimerTruthy, () => {
 
 		setLastCompletedComponent(() => {
 			return StalePromiseTimerComponent.timer;
 		});
 		timerCallback();
 
-		return false;
+		return {
+			isStarted: false
+		};
 	});
 	const promiseOutput = useDataControlledPromise(isPromiseRunningInitially, promiseFunc, (data, error) => {
 
