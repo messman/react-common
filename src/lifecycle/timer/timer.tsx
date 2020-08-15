@@ -4,14 +4,16 @@ import { useLatestForEffect } from '@/utility/render/render';
 export interface TruthyTimerInitialInput {
 	isStarted: boolean;
 	timeout: number;
+	startedAt?: number;
 }
 
 export interface TruthyTimerResetInput {
 	isStarted: boolean;
 	timeout?: number;
+	startedAt?: number;
 }
 
-interface TruthyTimerState extends TruthyTimerInitialInput {
+export interface TruthyTimerState extends TruthyTimerInitialInput {
 	startedAt: number;
 }
 
@@ -27,13 +29,13 @@ function noop() { }
  * Returns an output object with state and reset functions.
  * Callback can return an object to indicate new state of the timer.
  */
-export function useTruthyTimer(initialArgs: TruthyTimerInitialInput, isTruthy: boolean, callback?: () => (TruthyTimerResetInput | void)): TruthyTimerOutput {
+export function useTruthyTimer(initialInput: TruthyTimerInitialInput, isTruthy: boolean, callback?: () => (TruthyTimerResetInput | void)): TruthyTimerOutput {
 
 	const [state, setState] = React.useState<TruthyTimerState>(() => {
 		return {
-			isStarted: initialArgs.isStarted,
-			timeout: initialArgs.timeout,
-			startedAt: initialArgs.isStarted ? Date.now() : -1
+			isStarted: initialInput.isStarted,
+			timeout: initialInput.timeout,
+			startedAt: initialInput.startedAt || (initialInput.isStarted ? Date.now() : -1)
 		};
 	});
 
@@ -56,19 +58,22 @@ export function useTruthyTimer(initialArgs: TruthyTimerInitialInput, isTruthy: b
 
 			function onTimeoutComplete() {
 				let newIsStarted = false;
-				let newTimeout = timeout;
+				let newTimeout: number | undefined = undefined;
+				let newStartedAt: number | undefined = undefined;
+
 				if (latestCallback.current) {
-					const args = latestCallback.current();
-					if (args) {
-						newIsStarted = args.isStarted;
-						newTimeout = args.timeout || newTimeout;
+					const resetInput = latestCallback.current();
+					if (resetInput) {
+						newIsStarted = resetInput.isStarted;
+						newTimeout = resetInput.timeout;
+						newStartedAt = resetInput.startedAt;
 					}
 				}
 				setState((p) => {
 					return {
 						isStarted: newIsStarted,
-						timeout: newTimeout,
-						startedAt: newIsStarted ? Date.now() : p.startedAt
+						timeout: newTimeout || p.timeout,
+						startedAt: newStartedAt || (newIsStarted ? Date.now() : p.startedAt)
 					};
 				});
 			}
@@ -88,13 +93,13 @@ export function useTruthyTimer(initialArgs: TruthyTimerInitialInput, isTruthy: b
 	}, [isStartedInternalTimer, timeout, startedAt]);
 
 	return React.useMemo<TruthyTimerOutput>(() => {
-		function reset(args: TruthyTimerResetInput) {
+		function reset(resetInput: TruthyTimerResetInput) {
 
 			setState((p) => {
 				return {
-					isStarted: args.isStarted,
-					timeout: args.timeout || p.timeout,
-					startedAt: args.isStarted ? Date.now() : p.startedAt
+					isStarted: resetInput.isStarted,
+					timeout: resetInput.timeout || p.timeout,
+					startedAt: resetInput.startedAt || (resetInput.isStarted ? Date.now() : p.startedAt)
 				};
 			});
 		}

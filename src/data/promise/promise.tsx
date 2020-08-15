@@ -1,12 +1,7 @@
 import * as React from 'react';
 import { useLatestForEffect } from '@/utility/render/render';
 
-/**
- * Runs a promise. Executes a callback when complete. The callback should execute code to either restart or stop the promise.
- * The most recent callback from the most recent render is always used.
- * Promise is restarted based on changes to the promise function, running boolean, or additional restart arguments.
-*/
-export function usePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>, callback: (data: T | null, error: Error | null) => void, restartOn?: any[]) {
+function internalUsePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>, callback: (data: T | null, error: Error | null) => void, restartOn?: any[]) {
 
 	/*
 		The callback could change every render, and we don't know when the promise will finish.
@@ -43,19 +38,43 @@ export function usePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>,
 	}, [isRunning, promiseFunc, ...restartOn]);
 }
 
-interface ControlledPromiseState {
-	/** If true, promise is in progress. */
-	isRunning: boolean;
-	/** Counter used to track restarts correctly, since nothing else would change. Seems like cheating. */
-	runCounter: number;
+/** Initial input to the Promise hook. */
+export interface PromiseInitialInput<T> {
+	/** If true, promise will start. */
+	isStarted: boolean;
+	/** A function that returns a promise. */
+	promiseFunc: () => Promise<T>;
+	/** Data to be stored (and eventually replaced) as the successful result of the promise. */
+	data?: T | null;
+	/** An error to be stored (and eventually replaced) as the error result of the promise. */
+	error?: Error | null;
 }
 
-/** Output from the hook. */
-export interface ControlledPromiseOutput {
-	/** Whether the promise is running. */
-	isRunning: boolean;
-	/** Abandons any running promise. Optionally restarts the promise. */
-	reset: (run: boolean) => void;
+export interface PromiseResetInput<T> {
+	/** Whether the promise should restart. */
+	isStarted: boolean;
+	/** If provided, a new promise function. Else, the existing promise function is used. */
+	promiseFunc?: () => Promise<T>;
+	/** If provided, the data to store as the result of the promise. Else, the outcome of the promise is used. */
+	data?: T | null;
+	/** If provided, the error to store as the result of the promise. Else, the outcome of the promise is used. */
+	error?: Error | null;
+}
+
+export interface PromiseState<T> extends PromiseInitialInput<T> {
+	/** When the promise was last started. */
+	startedAt: number;
+	/** Data stored from the last promise completion. May be reset. */
+	data: T | null;
+	/** Error stored from the last promise completion. May be reset. */
+	error: Error | null;
+}
+
+export interface PromiseOutput<T> extends Omit<PromiseState<T>, 'promiseFunc'> {
+	/** Clears the data and error stored in state. Does not affect the current promise. */
+	clearResults: () => void;
+	/** Abandons the running promise and supplies a new state. */
+	reset: (args: PromiseResetInput<T>) => void;
 }
 
 /**
@@ -63,131 +82,89 @@ export interface ControlledPromiseOutput {
  * The callback, if supplied, returns a boolean indicating if the promise should run again. If not supplied, the promise will become idle.
  * Returns a function to use to reset the promise.
 */
-export function useControlledPromise<T>(isRunningInitially: boolean, promiseFunc: () => Promise<T>, callback?: (data: T | null, error: Error | null) => boolean): ControlledPromiseOutput {
+export function usePromise<T>(initialInput: PromiseInitialInput<T>, callback?: (data: T | null, error: Error | null) => PromiseResetInput<T>): PromiseOutput<T> {
 
-	const [state, setState] = React.useState<ControlledPromiseState>({
-		isRunning: isRunningInitially,
-		runCounter: 0
+	const [state, setState] = React.useState<PromiseState<T>>(() => {
+		return {
+			isStarted: initialInput.isStarted,
+			promiseFunc: initialInput.promiseFunc,
+			data: initialInput.data || null,
+			error: initialInput.error || null,
+			startedAt: initialInput.isStarted ? Date.now() : -1
+		};
 	});
 
-	function updateOnReset(run: boolean) {
+	const { isStarted, promiseFunc, startedAt, data, error } = state;
+
+	internalUsePromise<T>(isStarted, promiseFunc, (data, error) => {
+		let newIsStarted = false;
+		let newPromiseFunc: (() => Promise<T>) | undefined = undefined;
+		if (callback) {
+			const resetInput = callback(data, error);
+			if (resetInput) {
+				newIsStarted = resetInput.isStarted;
+				newPromiseFunc = resetInput.promiseFunc;
+				data = resetInput.data !== undefined ? resetInput.data : data;
+				error = resetInput.error !== undefined ? resetInput.error : error;
+			}
+		}
 		setState((p) => {
 			return {
-				isRunning: run,
-				runCounter: run ? p.runCounter + 1 : p.runCounter
+				isStarted: newIsStarted,
+				promiseFunc: newPromiseFunc !== undefined ? newPromiseFunc : p.promiseFunc,
+				data: data,
+				error: error,
+				startedAt: newIsStarted ? Date.now() : p.startedAt
 			};
 		});
+	}, [startedAt]);
+
+	return React.useMemo<PromiseOutput<T>>(() => {
+
+		function clearResults() {
+			setState((p) => {
+				return {
+					...p,
+					data: null,
+					error: null
+				};
+			});
+		}
+
+		function reset(resetInput: PromiseResetInput<T>) {
+			setState((p) => {
+				return {
+					isStarted: resetInput.isStarted,
+					promiseFunc: resetInput.promiseFunc !== undefined ? resetInput.promiseFunc : p.promiseFunc,
+					data: resetInput.data !== undefined ? resetInput.data : p.data,
+					error: resetInput.error !== undefined ? resetInput.error : p.error,
+					startedAt: resetInput.isStarted ? Date.now() : p.startedAt
+				};
+			});
+		}
+
+		return {
+			isStarted: isStarted,
+			startedAt: startedAt,
+			data: data,
+			error: error,
+			clearResults: clearResults,
+			reset: reset
+		};
+	}, [isStarted, promiseFunc, startedAt, data, error]);
+}
+
+export function getDebugPromiseStatus<T>(promiseOutput: PromiseOutput<T>): string {
+	const { isStarted, data, error, startedAt } = promiseOutput;
+
+	const startedText = isStarted ? 'started' : 'idle';
+	const startedAtText = (isStarted && startedAt > 0) ? ` (${(new Date(startedAt)).toLocaleTimeString([], { hour12: false })}.${(startedAt % 1000).toPrecision(3)})` : '';
+	const dataText = data ? ' (data)' : '';
+	let errorText = '';
+	if (error) {
+		errorText = error.message === clampPromiseMaximumTimeoutReason ? ' (error: Timed Out)' : ' (error)';
 	}
-
-	usePromise<T>(state.isRunning, promiseFunc, (data, error) => {
-		let rerun = false;
-		if (callback) {
-			rerun = callback(data, error);
-		}
-		updateOnReset(rerun);
-	}, [state.runCounter]);
-
-	return React.useMemo<ControlledPromiseOutput>(() => {
-		function reset(run: boolean) {
-			updateOnReset(run);
-		}
-
-		return {
-			isRunning: state.isRunning,
-			reset: reset
-		};
-	}, [state]);
-}
-
-interface DataControlledPromiseState<T> {
-	data: T | null;
-	error: Error | null;
-}
-
-/** Inputs to the callback function. */
-export interface DataControlledPromiseCallbackInput {
-	/** Whether the callback should be run again immediately. */
-	run: boolean;
-	/** Whether the stored data and error objects should be cleared out. If not specified, they are stored. */
-	clear?: boolean;
-}
-
-/** Output from the hook. */
-export interface DataControlledPromiseOutput<T> {
-	/** Whether the promise is running. */
-	isRunning: boolean;
-	/** The result data from the last time the promise was completed. May be cleared in the callback or the reset function. */
-	data: T | null;
-	/** The result error from the last time the promise was completed. May be cleared in the callback or the reset function. */
-	error: Error | null;
-	/** Abandons any running promise. Resets the promise. */
-	reset: (input: DataControlledPromiseCallbackInput) => void;
-}
-
-/**
- * Runs a promise function. Executes a callback when complete. The most recent callback from the most recent render is always used.
- * The callback, if supplied, returns information about whether the promise should run again or store its results. If not supplied, the promise will become idle and the results are kept.
- * Returns a function to use to reset the promise, as well as the results.
-*/
-export function useDataControlledPromise<T>(isRunningInitially: boolean, promiseFunc: () => Promise<T>, callback?: (data: T | null, error: Error | null) => DataControlledPromiseCallbackInput): DataControlledPromiseOutput<T> {
-
-	const [state, setState] = React.useState<DataControlledPromiseState<T>>({
-		data: null,
-		error: null
-	});
-
-	const controlledPromise = useControlledPromise(isRunningInitially, promiseFunc, (data, error) => {
-		let rerun = false;
-		let clear = false;
-		if (callback) {
-			const callbackInput = callback(data, error);
-			rerun = callbackInput.run;
-			clear = !!callbackInput.clear;
-		}
-
-		const dataToSet = clear ? null : data;
-		const errorToSet = clear ? null : error;
-
-		setState((p) => {
-			if (p.data === dataToSet && p.error === errorToSet) {
-				return p;
-			}
-			return {
-				data: dataToSet,
-				error: errorToSet
-			};
-		});
-		return rerun;
-	});
-
-	const isRunning = controlledPromise.isRunning;
-	const innerReset = controlledPromise.reset;
-
-	return React.useMemo<DataControlledPromiseOutput<T>>(() => {
-		function reset(input: DataControlledPromiseCallbackInput) {
-			const { run, clear } = input;
-
-			if (clear) {
-				setState((p) => {
-					if (!p.data && !p.error) {
-						return p;
-					}
-					return {
-						data: null,
-						error: null
-					};
-				});
-			}
-			innerReset(run);
-		}
-
-		return {
-			isRunning: isRunning,
-			data: state.data,
-			error: state.error,
-			reset: reset
-		};
-	}, [state, isRunning, innerReset]);
+	return startedText + startedAtText + dataText + errorText;
 }
 
 /** Can be compared to the message of the result error of a clamped promise to tell if the promise hit the maximum timeout. */

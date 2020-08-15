@@ -1,9 +1,8 @@
 import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { button, boolean, number } from '@storybook/addon-knobs';
-import { clampPromise, clampPromiseMaximumTimeoutReason, useDataControlledPromise } from './promise';
+import { clampPromise, usePromise, getDebugPromiseStatus } from './promise';
 import { seconds } from '@/utility/time/time';
-import { getPromiseStatus } from '@/test/shared';
 
 export default { title: 'Data/Promise' };
 
@@ -19,39 +18,43 @@ export const TestPromise = decorate('Promise', () => {
 
 	const actual = seconds(number('Actual Timeout', 3));
 	const clear = boolean('Clear', true);
+	const newResultValues = clear ? null : undefined;
 
 	const promiseFunc = React.useCallback(() => {
 		return clampPromise(getTestInfo(actual), minimum, maximum);
 	}, [actual, minimum, maximum]);
 
-	const promiseOutput = useDataControlledPromise(true, promiseFunc, (data, error) => {
+	const promiseOutput = usePromise({
+		isStarted: true,
+		promiseFunc: promiseFunc
+	}, (data, error) => {
 		console.log('promise finished', data, error);
 		return {
-			run: false
+			isStarted: false
 		};
 	});
 
 	button('Stop', () => {
 		promiseOutput.reset({
-			run: false,
-			clear: clear
+			isStarted: false,
+			promiseFunc: promiseFunc,
+			data: newResultValues,
+			error: newResultValues,
 		});
 	});
 
 	button('Reset', () => {
 		promiseOutput.reset({
-			run: true,
-			clear: clear
+			isStarted: true,
+			promiseFunc: promiseFunc,
+			data: newResultValues,
+			error: newResultValues,
 		});
 	});
 
-	const error = promiseOutput.error?.message || '';
-	const isErrorFromMaximum = error === clampPromiseMaximumTimeoutReason;
-
 	return (
 		<>
-			<p>Status: {getPromiseStatus(promiseOutput.isRunning, promiseOutput.data, promiseOutput.error)}</p>
-			<p>Is Error Caused By Maximum Timeout?: {isErrorFromMaximum ? 'Yes' : 'No'}</p>
+			<p>Status: {getDebugPromiseStatus(promiseOutput)}</p>
 		</>
 	);
 });

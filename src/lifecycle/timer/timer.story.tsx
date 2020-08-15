@@ -25,7 +25,8 @@ export const TestTruthyTimer = decorate('Truthy Timer', () => {
 
 	const timerB = useTruthyTimer({
 		isStarted: false,
-		timeout: timeoutB
+		timeout: timeoutB,
+		startedAt: Date.now() - 3000
 	}, documentVisibility, () => {
 		console.log('completed B');
 	});

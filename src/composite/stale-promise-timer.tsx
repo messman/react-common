@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useDataControlledPromise, DataControlledPromiseOutput } from '@/data/promise/promise';
+import { usePromise, PromiseOutput } from '@/data/promise/promise';
 import { useTruthyTimer, TruthyTimerOutput } from '@/lifecycle/timer/timer';
 
 /** Components used with the Stale Promise Timer. */
@@ -35,7 +35,7 @@ export interface StalePromiseTimerOutput<T> {
 	/** Contains ways to restart or end the timer. */
 	timer: TruthyTimerOutput;
 	/** Contains ways to restart or end the promise. */
-	promise: DataControlledPromiseOutput<T>;
+	promise: PromiseOutput<T>;
 	/** The last completed component - timer, promise, or neither. */
 	lastCompleted: StalePromiseTimerComponent;
 }
@@ -65,7 +65,10 @@ export function useStalePromiseTimer<T>(input: StalePromiseTimerInput<T>): Stale
 			isStarted: false
 		};
 	});
-	const promiseOutput = useDataControlledPromise(isPromiseRunningInitially, promiseFunc, (data, error) => {
+	const promiseOutput = usePromise({
+		isStarted: isPromiseRunningInitially,
+		promiseFunc: promiseFunc
+	}, (data, error) => {
 
 		setLastCompletedComponent(() => {
 			return StalePromiseTimerComponent.promise;
@@ -73,7 +76,7 @@ export function useStalePromiseTimer<T>(input: StalePromiseTimerInput<T>): Stale
 		promiseCallback(data, error);
 
 		return {
-			run: false
+			isStarted: false
 		};
 	});
 

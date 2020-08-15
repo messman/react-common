@@ -3,7 +3,7 @@ export { useStalePromiseTimer, StalePromiseTimerInput, StalePromiseTimerOutput, 
 
 // Data
 export { setClipboard } from './data/clipboard/clipboard';
-export { ControlledPromiseOutput, DataControlledPromiseOutput, clampPromise, clampPromiseMaximumTimeoutReason, useControlledPromise, useDataControlledPromise, usePromise } from './data/promise/promise';
+export { clampPromise, clampPromiseMaximumTimeoutReason, usePromise, PromiseInitialInput, PromiseOutput, PromiseResetInput, PromiseState, getDebugPromiseStatus } from './data/promise/promise';
 
 // Debug
 export { useRenderCount, useRenderDebug } from './debug/render';
@@ -17,7 +17,7 @@ export { Flex, FlexColumn, FlexParent, FlexProps, FlexRoot, FlexRow } from './la
 export { Overlay, OverlayProps } from './layout/ui/overlay/overlay';
 
 // Lifecycle
-export { useTruthyTimer, TruthyTimerOutput, getDebugTruthyTimerStatus, TruthyTimerInitialInput, TruthyTimerResetInput } from './lifecycle/timer/timer';
+export { useTruthyTimer, TruthyTimerOutput, getDebugTruthyTimerStatus, TruthyTimerState, TruthyTimerInitialInput, TruthyTimerResetInput } from './lifecycle/timer/timer';
 export { DocumentVisibilityProvider, DocumentVisibilityProviderProps, useDocumentVisibility } from './lifecycle/visibility/visibility';
 
 // Storage

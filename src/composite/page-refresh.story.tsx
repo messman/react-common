@@ -5,8 +5,7 @@ import { useTruthyTimer, getDebugTruthyTimerStatus } from '@/lifecycle/timer/tim
 import { createContextConsumer } from '@/utility/context/context';
 import { FlexRoot, FlexRow, FlexColumn } from '@/layout/ui/flex/flex';
 import styled from 'styled-components';
-import { getPromiseStatus } from '@/test/shared';
-import { clampPromise } from '@/data/promise/promise';
+import { clampPromise, getDebugPromiseStatus } from '@/data/promise/promise';
 import { useDocumentVisibility } from '@/lifecycle/visibility/visibility';
 import { seconds } from '@/utility/time/time';
 import { StalePromiseTimerOutput, useStalePromiseTimer, StalePromiseTimerComponent } from './stale-promise-timer';
@@ -207,12 +206,12 @@ const Page: React.FC<PageProps<string[]>> = (props) => {
 	const { timer, promise, lastCompleted } = promiseTimer;
 
 	React.useEffect(() => {
-		if (!timer.isStarted && !promise.isRunning) {
+		if (!timer.isStarted && !promise.isStarted) {
 			if (lastCompleted === StalePromiseTimerComponent.none) {
 				if (isActive) {
 					// Startup, choose the promise first.
 					promise.reset({
-						run: true
+						isStarted: true
 					});
 				}
 			}
@@ -220,7 +219,7 @@ const Page: React.FC<PageProps<string[]>> = (props) => {
 				if (isActive) {
 					if (!useRefreshButtonOnTimerExpiration) {
 						promise.reset({
-							run: true
+							isStarted: true
 						});
 					}
 				}
@@ -251,10 +250,10 @@ const Page: React.FC<PageProps<string[]>> = (props) => {
 
 	// Show reload button
 	let reloadButton: JSX.Element | null = null;
-	if (useRefreshButtonOnTimerExpiration && !timer.isStarted && !promise.isRunning && lastCompleted === StalePromiseTimerComponent.timer) {
+	if (useRefreshButtonOnTimerExpiration && isActive && !timer.isStarted && !promise.isStarted && lastCompleted === StalePromiseTimerComponent.timer) {
 		function onReloadClick() {
 			promise.reset({
-				run: true
+				isStarted: true
 			});
 		}
 
@@ -274,7 +273,7 @@ const Page: React.FC<PageProps<string[]>> = (props) => {
 					</Center>
 					<hr />
 					<p>Timer: {getDebugTruthyTimerStatus(timer)}</p>
-					<p>Promise: {getPromiseStatus(promise.isRunning, promise.data, promise.error)}</p>
+					<p>Promise: {getDebugPromiseStatus(promise)}</p>
 					{reloadButton}
 					{postsRender}
 				</Margin>
