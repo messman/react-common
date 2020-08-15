@@ -122,14 +122,13 @@ export function keys(): string[] {
 	return keys;
 }
 
-export type LocalStorageMigration<T> = (value: T | undefined, item: LocalStorageItem<T> | undefined) => T | undefined;
+export type LocalStorageMigration<T> = (value: T | undefined, item: LocalStorageItem<T> | undefined) => T;
 
 /**
  * Retrieves a value from LocalStorage, but also runs a migration function that may modify the output and the LocalStorage value.
- * If the migration function returns a modified value, that value is saved back to LocalStorage.
- * If the migration function returns undefined, the LocalStorage entry is deleted.
+ * If the migration function returns a modified value (comparison by reference), that value is saved back to LocalStorage immediately.
  */
-export function getWithMigration<T>(key: string, migration: LocalStorageMigration<T>, version: string): T | undefined {
+export function getWithMigration<T>(key: string, migration: LocalStorageMigration<T>, version: string) {
 	const item = getItem<T>(key);
 	const value = item?.x || undefined;
 	const newValue = migration(value, item);
@@ -139,25 +138,29 @@ export function getWithMigration<T>(key: string, migration: LocalStorageMigratio
 	return newValue;
 }
 
-export type UseLocalStorageReturn<T> = [T | undefined, (value: T | undefined) => void];
+export type UseLocalStorageReturn<T> = [T, (value: T | undefined) => void];
 
 /**
- * Creates a state variable that also saves to LocalStorage.
- * If the migration function returns a modified value, that value is saved back to LocalStorage.
- * If the migration function returns undefined, the LocalStorage entry is deleted.
+ * Creates a state variable that also loads from and saves to LocalStorage.
+ * If the migration function returns a modified value (comparison by reference), that value is saved back to LocalStorage.
  * Initial arguments are frozen for the life of the consuming component.
+ * If the setter function is passed undefined, the original saved migration function is run again to determine the new value.
 */
-export function useLocalStorage<T>(key: string, migrationOnGet: LocalStorageMigration<T>, version: string): UseLocalStorageReturn<T> {
+export function useLocalStorage<T>(key: string, migration: LocalStorageMigration<T>, version: string): UseLocalStorageReturn<T> {
 
 	const keyRef = React.useRef(key);
 	const versionRef = React.useRef(version);
+	const migrationRef = React.useRef(migration);
 
 	const [value, setValue] = React.useState(() => {
-		return getWithMigration(key, migrationOnGet, version);
+		return getWithMigration(key, migration, version);
 	});
 
 	return React.useMemo<UseLocalStorageReturn<T>>(() => {
 		function setNewValue(newValue: T | undefined) {
+			if (newValue === undefined) {
+				newValue = migrationRef.current(newValue, undefined);
+			}
 			if (!Object.is(value, newValue)) {
 				set(keyRef.current, newValue, versionRef.current);
 				setValue(newValue);
