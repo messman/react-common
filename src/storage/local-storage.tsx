@@ -130,7 +130,10 @@ export type LocalStorageMigration<T> = (value: T | undefined, item: LocalStorage
  */
 export function getWithMigration<T>(key: string, migration: LocalStorageMigration<T>, version: string) {
 	const item = getItem<T>(key);
-	const value = item?.x || undefined;
+	let value: T | undefined = undefined;
+	if (item) {
+		value = item!.x;
+	}
 	const newValue = migration(value, item);
 	if (!Object.is(value, newValue)) {
 		set(key, newValue, version);
