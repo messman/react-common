@@ -6,7 +6,7 @@ import { WindowDimensionsProvider } from '@/layout/services/window-layout/window
 import { WindowLayoutProvider, defaultLowerBreakpoints } from '@/layout/services/window-layout/window-layout';
 
 export interface StoryComponent {
-	(): JSX.Element,
+	(): JSX.Element;
 	story?: {
 		name?: string;
 		decorators?: any[];
