@@ -163,6 +163,7 @@ export const TestStickyInstant = decorate('Transition', () => {
 	const isTop = direction === 'top';
 
 	const transition = select('Transition', transitions, transitions.instant) as StickyTransition;
+	const transitionName = StickyTransition[transition as unknown as keyof typeof StickyTransition];
 
 	const stickyInput: StickyInput = {
 		direction: direction,
@@ -193,11 +194,12 @@ export const TestStickyInstant = decorate('Transition', () => {
 	return (
 		<>
 			<FlexRoot flexDirection='column'>
-				<p>Status: {isSticky ? 'Sticky' : 'Regular'}</p>
+				<p>{transitionName} | {isSticky ? 'Sticky' : 'Regular'}</p>
 				<ScrollContainer ref={intersectRootRef}>
 					<Scroller >
 						<p>Test</p>
 						<Filler />
+						<p>Test</p>
 						<Filler />
 						<p>Test</p>
 						<div ref={intersectTargetRef}>
@@ -209,6 +211,7 @@ export const TestStickyInstant = decorate('Transition', () => {
 						</div>
 						<p>Test</p>
 						<Filler />
+						<p>Test</p>
 						<Filler />
 						<p>Test</p>
 					</Scroller>

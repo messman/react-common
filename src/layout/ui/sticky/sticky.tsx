@@ -41,8 +41,8 @@ export interface StickyOutput {
 	intersectTargetRef: React.RefObject<any>;
 	intersectRootRef: React.RefObject<any>;
 	isSticky: boolean;
-	sizeRef: React.RefObject<any>;
-	stickyHeight: number;
+	relativeContentSizeRef: React.RefObject<any>;
+	stickyContentSizeRef: React.RefObject<any>;
 }
 
 const threshold = createThreshold();
@@ -53,15 +53,16 @@ export function useSticky(input: StickyInput): StickyOutput {
 
 	const [isSticky, setIsSticky] = React.useState(false);
 
-	const [sizeRef, size] = useControlledElementSize(0);
-	const stickyHeight = size.height;
+	const [relativeContentSizeRef, relativeContentSize] = useControlledElementSize(0);
+	const [stickyContentSizeRef] = useControlledElementSize(0);
+	const stickyHeight = relativeContentSize.height;
 
 	let rootMargin: string | undefined = undefined;
 	if (stickyHeight > 0 && transition !== StickyTransition.instant) {
 		let topMargin = 0;
 		let bottomMargin = 0;
 
-		if (transition === StickyTransition.disappear) {
+		if (transition === StickyTransition.disappear || transition === StickyTransition.carry) {
 			if (isTop) {
 				topMargin = stickyHeight;
 			}
@@ -102,8 +103,8 @@ export function useSticky(input: StickyInput): StickyOutput {
 		intersectTargetRef: intersectTargetRef,
 		intersectRootRef: intersectRootRef,
 		isSticky: isSticky,
-		sizeRef: sizeRef,
-		stickyHeight: stickyHeight
+		relativeContentSizeRef: relativeContentSizeRef,
+		stickyContentSizeRef: stickyContentSizeRef,
 	};
 }
 
@@ -115,35 +116,39 @@ export interface StickyProps {
 
 export const Sticky: React.FC<StickyProps> = (props) => {
 	const { output, relativeContent, stickyContent } = props;
+	const { input, isSticky, relativeContentSizeRef, stickyContentSizeRef } = output;
+	const { direction, transition } = input;
 
-	const { input, isSticky } = output;
-	const { direction } = input;
 	const isTop = direction === 'top';
 
-	// let isActuallySticky = isSticky;
-	// if (transition === StickyTransition.instant) {
-	// 	isActuallySticky = true;
-	// }
+	const relativeRender = (
+		<div ref={relativeContentSizeRef}>
+			{relativeContent}
+		</div>
+	);
+
+	const isActuallySticky = transition === StickyTransition.carry || isSticky;
 
 	const justifyContent = isTop ? 'flex-start' : 'flex-end';
-
 	const stickyRender = (
 		<StickyContainer isSticky={true} dataDirection={direction}>
-			<OverflowContentContainer justifyContent={justifyContent} isSticky={isSticky}>
-				{stickyContent}
+			<OverflowContentContainer justifyContent={justifyContent} isSticky={isActuallySticky}>
+				<div ref={stickyContentSizeRef}>
+
+					{stickyContent}
+				</div>
 			</OverflowContentContainer>
 		</StickyContainer>
 	);
 
-	const upperRender = isTop ? stickyRender : relativeContent;
-	const lowerRender = isTop ? relativeContent : stickyRender;
+	const upperRender = isTop ? stickyRender : relativeRender;
+	const lowerRender = isTop ? relativeRender : stickyRender;
 
 	return (
 		<>
 			{upperRender}
 			{lowerRender}
 		</>
-
 	);
 };
 
