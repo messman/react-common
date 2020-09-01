@@ -11,12 +11,12 @@ export default { title: 'Layout/Services/Element Intersect' };
 export const TestElementIntersect = decorate('Element Intersect', () => {
 
 	const rootMargin = text('Root Margin', '0%');
-	const thresholdRatioDistance = number('Threshold Ratio Distance', 0, { min: 0, max: 1, step: .05 });
+	const thresholdSections = number('Threshold Sections', 0, { min: 1, max: 20, step: 2 });
 	const useRootElement = boolean('Use Root Element', false);
 
 	const threshold = React.useMemo(() => {
-		return createThreshold(thresholdRatioDistance);
-	}, [thresholdRatioDistance]);
+		return createThreshold(thresholdSections);
+	}, [thresholdSections]);
 
 	const intersectOptions = React.useMemo<ElementIntersectOptions>(() => {
 		return {
@@ -35,8 +35,9 @@ export const TestElementIntersect = decorate('Element Intersect', () => {
 		<>
 			<FlexRoot flexDirection='column'>
 				<p>{JSON.stringify(threshold)}</p>
-				<p><strong>{getElementIntersectStatus(elementIntersect)}</strong></p>
-				<p><em>Previous: {getElementIntersectStatus(previousElementIntersect || null)}</em></p>
+				<ElementIntersectStatus intersect={elementIntersect} />
+				<hr />
+				<em><ElementIntersectStatus intersect={previousElementIntersect} /></em>
 				<FlexContainer ref={rootRef}>
 					<Scroller>
 						<Flex />
@@ -51,29 +52,39 @@ export const TestElementIntersect = decorate('Element Intersect', () => {
 	);
 });
 
-function getElementIntersectStatus(elementIntersect: ElementIntersect | null): string {
-	if (!elementIntersect) {
-		return '';
+interface ElementIntersectStatusProps {
+	intersect: ElementIntersect | null | undefined;
+}
+
+const ElementIntersectStatus: React.FC<ElementIntersectStatusProps> = (props) => {
+	const intersect = props.intersect;
+	if (!intersect) {
+		return <p>No Intersect Information.</p>;
 	}
-	const { isIntersecting, intersectionRatio, boundingClientRect, intersectionRect, rootBounds } = elementIntersect;
+
+	const { isIntersecting, intersectionRatio, boundingClientRect, intersectionRect, rootBounds, isTopVisible, isBottomVisible, isLeftVisible, isRightVisible } = intersect;
 
 	const isIntersectingText = isIntersecting ? 'Yes' : 'No';
 	const intersectionRatioText = ((intersectionRatio * 100).toFixed(1) || 0) + '%';
+	const visibleText = [isTopVisible ? 'top' : '', isBottomVisible ? 'bottom' : '', isLeftVisible ? 'left' : '', isRightVisible ? 'right' : ''].filter(x => !!x).join(', ');
 
-	const boundingClientRectText = `target: ${getDOMRectStatus(boundingClientRect)}`;
-	const intersectionRectText = `intersectionRect: ${getDOMRectStatus(intersectionRect)}`;
-	const rootBoundsText = `rootBounds: ${getDOMRectStatus(rootBounds)}`;
-
-	return [isIntersectingText, intersectionRatioText, boundingClientRectText, intersectionRectText, rootBoundsText].join(' | ');
-}
+	return (
+		<>
+			<p><strong>{isIntersectingText} {intersectionRatioText} ({visibleText})</strong></p>
+			<p>target: {getDOMRectStatus(boundingClientRect)}</p>
+			<p>intersectionRect: {getDOMRectStatus(intersectionRect)}</p>
+			<p>rootBounds: {getDOMRectStatus(rootBounds)}</p>
+		</>
+	);
+};
 
 function getDOMRectStatus(rect: DOMRectReadOnly | null): string {
 	if (!rect) {
 		return 'unknown';
 	}
 
-	const { x, y, width, height } = rect;
-	return `(${x}, ${y}) (${width} x ${height})`;
+	const { x, y, width, height, top, bottom, left, right } = rect;
+	return `x: ${x}, y: ${y}, w: ${width}, h: ${height}, t: ${top}, b: ${bottom}, l: ${left}, r: ${right}`;
 }
 
 const FlexContainer = styled(Flex)`

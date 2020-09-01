@@ -3,7 +3,7 @@ import { decorate } from '@/test/decorate';
 import { styled } from '@/test/styled';
 import { Flex, FlexRoot } from './flex';
 
-export default { title: 'Layout/UI' };
+export default { title: 'Layout/UI/Flex' };
 
 const FlexBorder = styled(Flex)`
 	border: 2px solid ${p => p.theme.color.text};

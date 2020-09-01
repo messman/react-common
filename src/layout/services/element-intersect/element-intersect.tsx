@@ -32,7 +32,10 @@ export interface ElementIntersectOptions extends Pick<IntersectionObserverInit, 
 }
 
 export interface ElementIntersect extends IntersectionObserverEntry {
-
+	isTopVisible: boolean;
+	isBottomVisible: boolean;
+	isLeftVisible: boolean;
+	isRightVisible: boolean;
 }
 
 /**
@@ -63,7 +66,35 @@ export function useElementIntersect(observerOptions: ElementIntersectOptions, ca
 
 		function onChange(entry: IntersectionObserverEntry) {
 			if (!isCleanedUp) {
-				latestCallback.current(entry);
+
+				let isTopVisible = false;
+				let isBottomVisible = false;
+				let isLeftVisible = false;
+				let isRightVisible = false;
+				const { boundingClientRect, intersectionRect, isIntersecting } = entry;
+				if (isIntersecting && boundingClientRect && intersectionRect) {
+					isTopVisible = boundingClientRect.top >= intersectionRect.top;
+					isBottomVisible = boundingClientRect.bottom <= intersectionRect.bottom;
+					isLeftVisible = boundingClientRect.left >= intersectionRect.left;
+					isRightVisible = boundingClientRect.right <= intersectionRect.right;
+				}
+
+				const intersect: ElementIntersect = {
+					// Cannot use rest operator here because of the type of object that the entry is (I guess).
+					time: entry.time,
+					target: entry.target,
+					isIntersecting: entry.isIntersecting,
+					rootBounds: entry.rootBounds,
+					boundingClientRect: entry.boundingClientRect,
+					intersectionRatio: entry.intersectionRatio,
+					intersectionRect: entry.intersectionRect,
+					isTopVisible: isTopVisible,
+					isBottomVisible: isBottomVisible,
+					isLeftVisible: isLeftVisible,
+					isRightVisible: isRightVisible
+				};
+
+				latestCallback.current(intersect);
 			}
 		}
 
