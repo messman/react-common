@@ -3,7 +3,7 @@ import { decorate } from '@/test/decorate';
 import { styled } from '@/test/styled';
 import { number, text, boolean } from '@storybook/addon-knobs';
 import { Flex, FlexRoot } from '@/layout/ui/flex/flex';
-import { useControlledElementIntersect, ElementIntersect, createThreshold, ElementIntersectOptions } from './element-intersect';
+import { useControlledElementIntersect, ElementIntersect, createThreshold, ElementIntersectOptions, ElementIntersectRelativePosition } from './element-intersect';
 import { usePrevious } from '@/utility/previous/previous';
 
 export default { title: 'Layout/Services/Element Intersect' };
@@ -12,7 +12,7 @@ export const TestElementIntersect = decorate('Element Intersect', () => {
 
 	const rootMargin = text('Root Margin', '0%');
 	const thresholdSections = number('Threshold Sections', 0, { min: 1, max: 20, step: 2 });
-	const useRootElement = boolean('Use Root Element', false);
+	const useRootElement = boolean('Use Root Element', true);
 
 	const threshold = React.useMemo(() => {
 		return createThreshold(thresholdSections);
@@ -62,11 +62,11 @@ const ElementIntersectStatus: React.FC<ElementIntersectStatusProps> = (props) =>
 		return <p>No Intersect Information.</p>;
 	}
 
-	const { isIntersecting, intersectionRatio, boundingClientRect, intersectionRect, rootBounds, isTopVisible, isBottomVisible, isLeftVisible, isRightVisible } = intersect;
+	const { isIntersecting, intersectionRatio, boundingClientRect, intersectionRect, rootBounds, top, right, left, bottom } = intersect;
 
 	const isIntersectingText = isIntersecting ? 'Yes' : 'No';
 	const intersectionRatioText = ((intersectionRatio * 100).toFixed(1) || 0) + '%';
-	const visibleText = [isTopVisible ? 'top' : '', isBottomVisible ? 'bottom' : '', isLeftVisible ? 'left' : '', isRightVisible ? 'right' : ''].filter(x => !!x).join(', ');
+	const visibleText = [getRelativePositionStatus('top', top), getRelativePositionStatus('bottom', bottom), getRelativePositionStatus('left', left), getRelativePositionStatus('right', right)].filter(x => !!x).join(', ');
 
 	return (
 		<>
@@ -77,6 +77,14 @@ const ElementIntersectStatus: React.FC<ElementIntersectStatusProps> = (props) =>
 		</>
 	);
 };
+
+function getRelativePositionStatus(name: string, position: ElementIntersectRelativePosition): string {
+	const positionText = [position.isBefore ? '^' : '', position.isIntersecting ? 'X' : '', position.isAfter ? 'V' : ''].join('');
+	if (positionText) {
+		return `${name} ${positionText}`;
+	}
+	return '';
+}
 
 function getDOMRectStatus(rect: DOMRectReadOnly | null): string {
 	if (!rect) {

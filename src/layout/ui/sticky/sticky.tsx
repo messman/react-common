@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { useControlledElementIntersect, ElementIntersectOptions, ElementIntersect } from '@/layout/services/element-intersect/element-intersect';
+import { useElementIntersect, createThreshold } from '@/layout/services/element-intersect/element-intersect';
 import styled, { StyledComponent } from 'styled-components';
-//import { useElementSize } from '@/layout/services/element-size/element-size';
+import { useControlledElementSize } from '@/layout/services/element-size/element-size';
+import { FlexColumn } from '../flex/flex';
 
 export enum StickyTransition {
 	/**
@@ -33,125 +34,142 @@ export enum StickyTransition {
 export interface StickyInput {
 	direction: 'top' | 'bottom';
 	transition: StickyTransition;
-	replaceTransition?: JSX.Element | null;
-	intersectOptions: ElementIntersectOptions;
 }
 
 export interface StickyOutput {
+	input: StickyInput;
 	intersectTargetRef: React.RefObject<any>;
-	intersect: ElementIntersect | null;
+	intersectRootRef: React.RefObject<any>;
 	isSticky: boolean;
+	sizeRef: React.RefObject<any>;
+	stickyHeight: number;
 }
 
-export function useSticky(props: StickyInput): StickyOutput {
-	const { direction } = props;
-	const { intersectOptions } = props;
+const threshold = createThreshold();
 
-	const [intersectTargetRef, intersect] = useControlledElementIntersect(intersectOptions);
+export function useSticky(input: StickyInput): StickyOutput {
+	const { direction, transition } = input;
+	const isTop = direction.toLowerCase() === 'top';
 
-	let isSticky = false;
-	if (intersect && intersect.rootBounds) {
-		isSticky = intersect.intersectionRatio < 1;
-		if (isSticky) {
-			switch (direction) {
-				case 'top':
-					isSticky = !intersect.isTopVisible;
-					break;
-				case 'bottom':
-					isSticky = !intersect.isBottomVisible;
-					break;
+	const [isSticky, setIsSticky] = React.useState(false);
+
+	const [sizeRef, size] = useControlledElementSize(0);
+	const stickyHeight = size.height;
+
+	let rootMargin: string | undefined = undefined;
+	if (stickyHeight > 0 && transition !== StickyTransition.instant) {
+		let topMargin = 0;
+		let bottomMargin = 0;
+
+		if (transition === StickyTransition.disappear) {
+			if (isTop) {
+				topMargin = stickyHeight;
+			}
+			else {
+				bottomMargin = stickyHeight;
 			}
 		}
+
+		rootMargin = `${topMargin}px 0px ${bottomMargin}px 0px`;
 	}
 
+	const [intersectTargetRef, intersectRootRef] = useElementIntersect({
+		useRoot: true,
+		rootMargin: rootMargin,
+		threshold: threshold
+	}, (intersect) => {
+		if (!intersect) {
+			return;
+		}
+
+		/*
+			Stick is not just intersecting.
+			If we are using a sticky header, the header should be sticky whenever the target area is above the root - 
+			even if that means the target area is far above the root and no longer intersecting.
+		*/
+
+		let isSticky = false;
+		if (intersect) {
+			isSticky = isTop ? intersect.top.isBefore : intersect.bottom.isAfter;
+		}
+
+
+		setIsSticky(isSticky);
+	});
 
 	return {
+		input: input,
 		intersectTargetRef: intersectTargetRef,
-		intersect: intersect,
-		isSticky: isSticky
+		intersectRootRef: intersectRootRef,
+		isSticky: isSticky,
+		sizeRef: sizeRef,
+		stickyHeight: stickyHeight
 	};
 }
 
 export interface StickyProps {
-	input: StickyInput;
 	output: StickyOutput;
+	relativeContent: JSX.Element | null;
+	stickyContent: JSX.Element | null;
 }
 
 export const Sticky: React.FC<StickyProps> = (props) => {
-	const { input, children } = props;
+	const { output, relativeContent, stickyContent } = props;
 
-	const { transition, direction } = input;
-	if (transition === StickyTransition.instant) {
-		return (
-			<StickyContainer direction={direction}>
-				{children}
-			</StickyContainer>
-		);
-	}
-	return <>{children}</>;
+	const { input, isSticky } = output;
+	const { direction } = input;
+	const isTop = direction === 'top';
 
-	// const { direction, children, transition } = props;
-	// const isTop = direction === 'top';
-
-
-
-	// let isInStickyMode = false;
-	// if (intersect && intersect.rootBounds) {
-	// 	isInStickyMode = intersect.intersectionRatio < 1 && intersect.boundingClientRect.top < intersect.rootBounds.top;
+	// let isActuallySticky = isSticky;
+	// if (transition === StickyTransition.instant) {
+	// 	isActuallySticky = true;
 	// }
 
-	// const [headerHeight, setHeaderHeight] = React.useState(-1);
-	// const sizeRef = useElementSize(0, (_, height) => {
-	// 	if (!isInStickyMode || headerHeight === -1) {
-	// 		setHeaderHeight(height);
-	// 	}
-	// });
+	const justifyContent = isTop ? 'flex-start' : 'flex-end';
 
-	// let innerContent: JSX.Element = null!;
-	// if (isInStickyMode) {
-	// 	innerContent = (
-	// 		<ActiveStickyBackground>
-	// 			<p>Sticky!</p>
-	// 		</ActiveStickyBackground>
-	// 	);
-	// }
-	// else {
-	// 	innerContent = (
-	// 		<RegularStickyBackground>
-	// 			<p>Regular</p>
-	// 		</RegularStickyBackground>
-	// 	);
-	// }
+	const stickyRender = (
+		<StickyContainer isSticky={true} dataDirection={direction}>
+			<OverflowContentContainer justifyContent={justifyContent} isSticky={isSticky}>
+				{stickyContent}
+			</OverflowContentContainer>
+		</StickyContainer>
+	);
 
-	// return (
-	// 	<div ref={intersectTargetRef}>
-	// 		<StickyContainer isSticky={true} ref={sizeRef}>
-	// 			{innerContent}
-	// 		</StickyContainer>
-	// 		{children}
-	// 	</div>
-	// );
+	const upperRender = isTop ? stickyRender : relativeContent;
+	const lowerRender = isTop ? relativeContent : stickyRender;
+
+	return (
+		<>
+			{upperRender}
+			{lowerRender}
+		</>
+
+	);
 };
 
-// const threshold = createThreshold();
-// const intersectOptions: ElementIntersectOptions = {
-// 	useRoot: false,
-// 	rootMargin: '0px',
-// 	threshold: threshold
-// };
-
 interface StickyContainerProps {
-	direction: 'top' | 'bottom';
+	dataDirection: 'top' | 'bottom';
+	isSticky: boolean;
 }
 
-
 const StickyContainer = styled.div.attrs<StickyContainerProps>((p) => {
-	const { direction } = p;
+	const { dataDirection, isSticky } = p;
+	const style: Partial<CSSStyleDeclaration> = {
+		[dataDirection]: '0px',
+		position: isSticky ? 'sticky' : 'relative',
+		height: '0px'
+	};
+
 	return {
-		style: {
-			[direction]: -1 + 'px',
-			paddingTop: '1px',
-			position: 'sticky'
-		}
+		style: style
 	};
 })`` as StyledComponent<'div', any, StickyContainerProps, never>;
+
+interface OverflowContentContainerProps {
+	isSticky: boolean;
+}
+
+const OverflowContentContainer = styled(FlexColumn) <OverflowContentContainerProps>`
+	height: 0;
+	overflow: ${p => p.isSticky ? 'visible' : 'hidden'};
+`;

@@ -2,10 +2,16 @@ import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { styled, css } from '@/test/styled';
 import { FlexRoot, Flex } from '../flex/flex';
-import { createThreshold } from '@/layout/services/element-intersect/element-intersect';
-import { useSticky, StickyTransition, StickyInput, Sticky } from './sticky';
+import { SimpleStickyInput, useSimpleSticky, SimpleSticky } from './sticky-simple';
+import { boolean, select } from '@storybook/addon-knobs';
+import { StickyInput, useSticky, StickyTransition, Sticky } from './sticky';
 
 export default { title: 'Layout/UI/Sticky' };
+
+const directions = {
+	top: 'top',
+	bottom: 'bottom'
+};
 
 const ScrollContainer = styled(Flex)`
 	overflow: auto;
@@ -13,8 +19,7 @@ const ScrollContainer = styled(Flex)`
 
 const Scroller = styled.div`
 	width: 100%;
-	background: rgb(6,169,203);
-	background: linear-gradient(180deg, rgba(6,169,203,1) 0%, rgba(9,9,121,1) 100%);
+	background: darkblue;
 `;
 
 const Filler = styled.div`
@@ -71,61 +76,45 @@ export const TestStickyWithoutLibrary = decorate('Without Library', () => {
 	);
 });
 
-const threshold = createThreshold();
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
 
-export const TestStickyInstant = decorate('Instant', () => {
+export const TestSimpleSticky = decorate('Simple', () => {
 
-	const stickyHeaderInput: StickyInput = {
-		direction: 'top',
-		intersectOptions: {
-			useRoot: false,
-			rootMargin: '0%',
-			threshold: threshold
-		},
-		transition: StickyTransition.instant,
+	const useTop = boolean('Use Top Sticky', true);
+
+	const simpleStickyInput: SimpleStickyInput = {
+		direction: useTop ? 'top' : 'bottom'
 	};
-	const stickyHeaderOutput = useSticky(stickyHeaderInput);
+	const { isSticky, intersectRootRef, intersectTargetRef } = useSimpleSticky(simpleStickyInput);
 
-	const stickyFooterInput: StickyInput = {
-		direction: 'bottom',
-		intersectOptions: {
-			useRoot: false,
-			rootMargin: '0%',
-			threshold: threshold
-		},
-		transition: StickyTransition.instant,
-	};
-	const stickyFooterOutput = useSticky(stickyFooterInput);
+	const stickyRender = (
+		<SimpleSticky input={simpleStickyInput}>
+			<SimpleStickyExample isSticky={isSticky}>
+				<p>Here's the {useTop ? 'Header' : 'Footer'}.</p>
+			</SimpleStickyExample>
+		</SimpleSticky>
+	);
 
-	const HeaderStickyContent = stickyHeaderOutput.isSticky ? ActiveInstantSticky : RegularInstantSticky;
-	const FooterStickyContent = stickyFooterOutput.isSticky ? ActiveInstantSticky : RegularInstantSticky;
+	const upperStickyRender = useTop ? stickyRender : null;
+	const lowerStickyRender = useTop ? null : stickyRender;
 
 	return (
 		<>
 			<FlexRoot flexDirection='column'>
-				<p>Some other content</p>
-				<ScrollContainer>
-					<Scroller>
+				<p>Status: {isSticky ? 'Sticky' : 'Regular'}</p>
+				<ScrollContainer ref={intersectRootRef}>
+					<Scroller >
 						<p>Test</p>
 						<Filler />
 						<Filler />
 						<p>Test</p>
-						<div ref={stickyHeaderOutput.intersectTargetRef}>
-							<div ref={stickyFooterOutput.intersectTargetRef}>
-								<Sticky input={stickyHeaderInput} output={stickyHeaderOutput}>
-									<HeaderStickyContent>
-										<p>Here's the Header.</p>
-									</HeaderStickyContent>
-								</Sticky>
-								<p>Test</p>
-								<Filler />
-								<p>Test</p>
-								<Sticky input={stickyFooterInput} output={stickyFooterOutput}>
-									<FooterStickyContent>
-										<p>Here's the Footer.</p>
-									</FooterStickyContent>
-								</Sticky>
-							</div>
+						<div ref={intersectTargetRef}>
+							{upperStickyRender}
+							<p>Test</p>
+							<Filler />
+							<p>Test</p>
+							{lowerStickyRender}
 						</div>
 						<p>Test</p>
 						<Filler />
@@ -138,61 +127,119 @@ export const TestStickyInstant = decorate('Instant', () => {
 	);
 });
 
-const commonInstantSticky = css`
+interface SimpleStickyExampleProps {
+	isSticky: boolean;
+}
+
+const SimpleStickyExample = styled.div<SimpleStickyExampleProps>`
+	padding: 1rem;
+	transition: all .2s linear;
+	transition-property: opacity, border-color;
+	background-color: ${p => p.theme.color.backgroundSecondary};
+
+	border: 2px solid transparent;
+	opacity: 1;
+
+	${p => p.isSticky && css`
+		border: 2px solid green;
+		opacity: .7;
+	`};
+`;
+
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+
+const transitions = {
+	instant: StickyTransition.instant,
+	disappear: StickyTransition.disappear,
+	replaceDisappear: StickyTransition.replaceDisappear,
+	replaceCarry: StickyTransition.replaceCarry,
+	carry: StickyTransition.carry,
+};
+
+export const TestStickyInstant = decorate('Transition', () => {
+
+	const direction = select('Direction', directions, directions.top) as keyof typeof directions;
+	const isTop = direction === 'top';
+
+	const transition = select('Transition', transitions, transitions.instant) as StickyTransition;
+
+	const stickyInput: StickyInput = {
+		direction: direction,
+		transition: transition
+	};
+	const stickyOutput = useSticky(stickyInput);
+	const { intersectRootRef, intersectTargetRef, isSticky } = stickyOutput;
+
+	const relativeContent = (
+		<TransitionStickyContent isSticky={false}>
+			<p>Here's the {isTop ? 'Header' : 'Footer'}.</p>
+		</TransitionStickyContent>
+	);
+
+	const stickyContent = (
+		<TransitionStickyContent isSticky={isSticky}>
+			<p>Here's the STICKY {isTop ? 'Header' : 'Footer'}.</p>
+		</TransitionStickyContent>
+	);
+
+	const stickyRender = (
+		<Sticky output={stickyOutput} relativeContent={relativeContent} stickyContent={stickyContent} />
+	);
+
+	const upperStickyRender = isTop ? stickyRender : null;
+	const lowerStickyRender = isTop ? null : stickyRender;
+
+	return (
+		<>
+			<FlexRoot flexDirection='column'>
+				<p>Status: {isSticky ? 'Sticky' : 'Regular'}</p>
+				<ScrollContainer ref={intersectRootRef}>
+					<Scroller >
+						<p>Test</p>
+						<Filler />
+						<Filler />
+						<p>Test</p>
+						<div ref={intersectTargetRef}>
+							{upperStickyRender}
+							<p>Test</p>
+							<Filler />
+							<p>Test</p>
+							{lowerStickyRender}
+						</div>
+						<p>Test</p>
+						<Filler />
+						<Filler />
+						<p>Test</p>
+					</Scroller>
+				</ScrollContainer>
+			</FlexRoot>
+		</>
+	);
+});
+
+interface TransitionStickyContentProps {
+	isSticky: boolean;
+}
+
+const TransitionStickyContent = styled.div<TransitionStickyContentProps>`
 	padding: 1rem;
 	transition: all .5s linear;
-	transition-property: opacity border-color;
+	transition-property: opacity, border-color, padding;
 	background-color: ${p => p.theme.color.backgroundSecondary};
-`;
 
-const RegularInstantSticky = styled.div`
-	${commonInstantSticky};
-	border-bottom: 2px solid transparent;
+	border: 4px solid transparent;
 	opacity: 1;
+
+	${p => p.isSticky && css`
+		padding: .5rem 1rem;
+		border: 4px solid green;
+		opacity: .7;
+	`};
 `;
-const ActiveInstantSticky = styled.div`
-	${commonInstantSticky};
-	border-bottom: 2px solid red;
-	opacity: .5;
-`;
 
 
-
-// const StickyHeader: React.FC = (props) => {
-
-// 	const [intersectTargetRef, intersect] = useControlledElementIntersect(intersectOptions);
-
-// 	const isInStickyMode = intersect && intersect.intersectionRatio < 1;
-
-// 	const [headerHeight, setHeaderHeight] = React.useState(-1);
-// 	const sizeRef = useElementSize(0, (_, height) => {
-// 		if (!isInStickyMode || headerHeight === -1) {
-// 			setHeaderHeight(height);
-// 		}
-// 	});
-
-// 	let innerContent: JSX.Element = null!;
-// 	if (isInStickyMode) {
-// 		innerContent = (
-// 			<ActiveStickyBackground>
-// 				<p>Sticky!</p>
-// 			</ActiveStickyBackground>
-// 		);
-// 	}
-// 	else {
-// 		innerContent = (
-// 			<RegularStickyBackground>
-// 				<p>Regular</p>
-// 			</RegularStickyBackground>
-// 		);
-// 	}
-
-// 	return (
-// 		<div ref={intersectTargetRef}>
-// 			<StickyContainer isSticky={true} ref={sizeRef}>
-// 				{innerContent}
-// 			</StickyContainer>
-// 			{props.children}
-// 		</div>
-// 	);
-// };
+// const Temp = styled.div`
+// 	transform: scale(0deg);
+// 	will-change: transform;
+// `;

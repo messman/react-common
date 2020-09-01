@@ -32,10 +32,18 @@ export interface ElementIntersectOptions extends Pick<IntersectionObserverInit, 
 }
 
 export interface ElementIntersect extends IntersectionObserverEntry {
-	isTopVisible: boolean;
-	isBottomVisible: boolean;
-	isLeftVisible: boolean;
-	isRightVisible: boolean;
+	top: ElementIntersectRelativePosition;
+	bottom: ElementIntersectRelativePosition;
+	left: ElementIntersectRelativePosition;
+	right: ElementIntersectRelativePosition;
+}
+
+export interface ElementIntersectRelativePosition {
+	/** Meaning, the target is seen before the root from left to right, top to bottom. */
+	isBefore: boolean;
+	/** Meaning, the target is seen after the root from left to right, top to bottom. */
+	isAfter: boolean;
+	isIntersecting: boolean;
 }
 
 /**
@@ -66,35 +74,7 @@ export function useElementIntersect(observerOptions: ElementIntersectOptions, ca
 
 		function onChange(entry: IntersectionObserverEntry) {
 			if (!isCleanedUp) {
-
-				let isTopVisible = false;
-				let isBottomVisible = false;
-				let isLeftVisible = false;
-				let isRightVisible = false;
-				const { boundingClientRect, intersectionRect, isIntersecting } = entry;
-				if (isIntersecting && boundingClientRect && intersectionRect) {
-					isTopVisible = boundingClientRect.top >= intersectionRect.top;
-					isBottomVisible = boundingClientRect.bottom <= intersectionRect.bottom;
-					isLeftVisible = boundingClientRect.left >= intersectionRect.left;
-					isRightVisible = boundingClientRect.right <= intersectionRect.right;
-				}
-
-				const intersect: ElementIntersect = {
-					// Cannot use rest operator here because of the type of object that the entry is (I guess).
-					time: entry.time,
-					target: entry.target,
-					isIntersecting: entry.isIntersecting,
-					rootBounds: entry.rootBounds,
-					boundingClientRect: entry.boundingClientRect,
-					intersectionRatio: entry.intersectionRatio,
-					intersectionRect: entry.intersectionRect,
-					isTopVisible: isTopVisible,
-					isBottomVisible: isBottomVisible,
-					isLeftVisible: isLeftVisible,
-					isRightVisible: isRightVisible
-				};
-
-				latestCallback.current(intersect);
+				latestCallback.current(createElementIntersect(entry));
 			}
 		}
 
@@ -135,6 +115,54 @@ export function useControlledElementIntersect(observerOptions: ElementIntersectO
 
 	return [targetRef, elementIntersect, rootRef];
 };
+
+
+function createElementIntersect(entry: IntersectionObserverEntry): ElementIntersect {
+	const { boundingClientRect, rootBounds, isIntersecting } = entry;
+
+	const hasRects = !!boundingClientRect && !!rootBounds;
+
+	// 'Before' means 'Above' or 'To The Left Of'.
+	const topIsBefore: boolean = hasRects && boundingClientRect.top < rootBounds!.top;
+	const topIsAfter: boolean = hasRects && boundingClientRect.top > rootBounds!.bottom;
+	const rightIsBefore: boolean = hasRects && boundingClientRect.right < rootBounds!.left;
+	const rightIsAfter: boolean = hasRects && boundingClientRect.right > rootBounds!.right;
+	const bottomIsBefore: boolean = hasRects && boundingClientRect.bottom < rootBounds!.top;
+	const bottomIsAfter: boolean = hasRects && boundingClientRect.bottom > rootBounds!.bottom;
+	const leftIsBefore: boolean = hasRects && boundingClientRect.left < rootBounds!.left;
+	const leftIsAfter: boolean = hasRects && boundingClientRect.left > rootBounds!.right;
+
+	return {
+		// Cannot use rest operator here because of the type of object that the entry is (I guess).
+		time: entry.time,
+		target: entry.target,
+		isIntersecting: entry.isIntersecting,
+		rootBounds: entry.rootBounds,
+		intersectionRatio: entry.intersectionRatio,
+		boundingClientRect: entry.boundingClientRect,
+		intersectionRect: entry.intersectionRect,
+		top: {
+			isBefore: topIsBefore,
+			isAfter: topIsAfter,
+			isIntersecting: isIntersecting && !topIsBefore && !topIsAfter
+		},
+		right: {
+			isBefore: rightIsBefore,
+			isAfter: rightIsAfter,
+			isIntersecting: isIntersecting && !rightIsBefore && !rightIsAfter
+		},
+		bottom: {
+			isBefore: bottomIsBefore,
+			isAfter: bottomIsAfter,
+			isIntersecting: isIntersecting && !bottomIsBefore && !bottomIsAfter
+		},
+		left: {
+			isBefore: leftIsBefore,
+			isAfter: leftIsAfter,
+			isIntersecting: isIntersecting && !leftIsBefore && !leftIsAfter
+		}
+	};
+}
 
 /*
 	Like with ResizeObserver, we want to tweak the API a bit. We'd prefer to bind a callback to an element implicitly and take that out of our consuming code.
