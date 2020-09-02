@@ -176,14 +176,13 @@ export const TestStickyTransition = decorate('Transition', () => {
 		</TransitionStickyContent>
 	);
 
-	const stickyContent = (
-		<TransitionStickyContent isSticky={isSticky}>
-			<p>Here's the STICKY {isTop ? 'Header' : 'Footer'}.</p>
-		</TransitionStickyContent>
-	);
 
 	const stickyRender = (
-		<Sticky output={stickyOutput} relativeContent={relativeContent} stickyContent={stickyContent} />
+		<Sticky output={stickyOutput} relativeContent={relativeContent}>
+			<TransitionStickyContent isSticky={isSticky}>
+				<p>Here's the sticky render {isSticky ? ' STICKY' : ''} {isTop ? 'Header' : 'Footer'}.</p>
+			</TransitionStickyContent>
+		</Sticky>
 	);
 
 	const upperStickyRender = isTop ? stickyRender : null;
