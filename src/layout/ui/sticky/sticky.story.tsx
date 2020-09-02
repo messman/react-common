@@ -157,7 +157,7 @@ const transitions = {
 	half: [.5, undefined],
 	almost: [1, -10],
 	full: [1, undefined],
-	extra: [2, undefined]
+	double: [2, undefined]
 } as unknown as any;
 
 export const TestStickyTransition = decorate('Transition', () => {
@@ -185,7 +185,7 @@ export const TestStickyTransition = decorate('Transition', () => {
 	const { rootRef, containerTargetRef, isSticky, isEarlySticky } = stickyOutput;
 
 	const variableHeightStickyContent = !useChangingHeight ? null : (
-		<TransitionStickyContent isChanged={isEarlySticky} isDifferentHeight={isSticky}>
+		<TransitionStickyContent isChanged={isEarlySticky || isSticky} isDifferentHeight={isSticky}>
 			<p>Here's the variable-height sticky {isTop ? 'Header' : 'Footer'}.</p>
 		</TransitionStickyContent>
 	);
