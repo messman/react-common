@@ -18,15 +18,16 @@ export const TestElementIntersect = decorate('Element Intersect', () => {
 		return createThreshold(thresholdSections);
 	}, [thresholdSections]);
 
+	const rootRef = React.useRef<any>(null!);
 	const intersectOptions = React.useMemo<ElementIntersectOptions>(() => {
 		return {
-			useRoot: useRootElement,
+			rootRef: rootRef,
 			rootMargin: rootMargin,
 			threshold: threshold
 		};
 	}, [rootMargin, threshold, useRootElement]);
 
-	const [targetRef, elementIntersect, rootRef] = useControlledElementIntersect(intersectOptions, (_) => {
+	const [targetRef, elementIntersect] = useControlledElementIntersect(intersectOptions, (_) => {
 		//console.log('Intersect', elementIntersect);
 	});
 	const previousElementIntersect = usePrevious(elementIntersect);

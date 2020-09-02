@@ -4,7 +4,8 @@ import { styled, css } from '@/test/styled';
 import { FlexRoot, Flex } from '../flex/flex';
 import { SimpleStickyInput, useSimpleSticky, SimpleSticky } from './sticky-simple';
 import { boolean, select } from '@storybook/addon-knobs';
-import { StickyInput, useSticky, StickyTransition, Sticky } from './sticky';
+import { StickyInput, useSticky, Sticky } from './sticky';
+import { useRenderCount } from '@/debug/render';
 
 export default { title: 'Layout/UI/Sticky' };
 
@@ -86,7 +87,7 @@ export const TestSimpleSticky = decorate('Simple', () => {
 	const simpleStickyInput: SimpleStickyInput = {
 		direction: useTop ? 'top' : 'bottom'
 	};
-	const { isSticky, intersectRootRef, intersectTargetRef } = useSimpleSticky(simpleStickyInput);
+	const { isSticky, rootRef, containerTargetRef } = useSimpleSticky(simpleStickyInput);
 
 	const stickyRender = (
 		<SimpleSticky input={simpleStickyInput}>
@@ -103,13 +104,13 @@ export const TestSimpleSticky = decorate('Simple', () => {
 		<>
 			<FlexRoot flexDirection='column'>
 				<p>Status: {isSticky ? 'Sticky' : 'Regular'}</p>
-				<ScrollContainer ref={intersectRootRef}>
+				<ScrollContainer ref={rootRef}>
 					<Scroller >
 						<p>Test</p>
 						<Filler />
 						<Filler />
 						<p>Test</p>
-						<div ref={intersectTargetRef}>
+						<div ref={containerTargetRef}>
 							{upperStickyRender}
 							<p>Test</p>
 							<Filler />
@@ -149,43 +150,50 @@ const SimpleStickyExample = styled.div<SimpleStickyExampleProps>`
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 
+const transitionNames = ['instant', 'half', 'almost', 'full', 'double'];
+
 const transitions = {
-	instant: StickyTransition.instant,
-	disappear: StickyTransition.disappear,
-	carry: StickyTransition.carry,
-	disappearToVariableSticky: StickyTransition.disappearToVariableSticky,
-	carryToVariableSticky: StickyTransition.carryToVariableSticky,
-};
+	instant: [0, undefined],
+	half: [.5, undefined],
+	almost: [1, -10],
+	full: [1, undefined],
+	extra: [2, undefined]
+} as unknown as any;
 
 export const TestStickyTransition = decorate('Transition', () => {
 
+	const renderCount = useRenderCount('Test Sticky Transition');
+
 	const useChangingHeight = boolean('Use Changing Height', false);
+	const useEarlySticky = boolean('Use Early Sticky', false);
 
 	const direction = select('Direction', directions, directions.top) as keyof typeof directions;
 	const isTop = direction === 'top';
 
-	const transition = select('Transition', transitions, transitions.instant) as StickyTransition;
-	const transitionName = StickyTransition[transition as unknown as keyof typeof StickyTransition];
+	const transitionName = select('Transition', transitionNames, transitionNames[0]);
+	const [percent, pixels] = transitions[transitionName];
 
 	///////////
 
 	const stickyInput: StickyInput = {
 		direction: direction,
-		transition: transition
+		useEarlySticky: useEarlySticky,
+		thresholdPercent: percent,
+		thresholdPixels: pixels
 	};
 	const stickyOutput = useSticky(stickyInput);
-	const { intersectRootRef, intersectTargetRef, isSticky } = stickyOutput;
+	const { rootRef, containerTargetRef, isSticky, isEarlySticky } = stickyOutput;
 
 	const variableHeightStickyContent = !useChangingHeight ? null : (
-		<TransitionStickyContent isSticky={true} isDifferentHeightWhenSticky={true}>
+		<TransitionStickyContent isChanged={isEarlySticky} isDifferentHeight={isSticky}>
 			<p>Here's the variable-height sticky {isTop ? 'Header' : 'Footer'}.</p>
 		</TransitionStickyContent>
 	);
 
 	const render = (
 		<Sticky output={stickyOutput} variableHeightStickyContent={variableHeightStickyContent}>
-			<TransitionStickyContent isSticky={isSticky} isDifferentHeightWhenSticky={false}>
-				<p>Here's the static {isTop ? 'Header' : 'Footer'}.</p>
+			<TransitionStickyContent isChanged={isEarlySticky || isSticky} isDifferentHeight={false}>
+				<p>Here's the child {isTop ? 'Header' : 'Footer'}.</p>
 			</TransitionStickyContent>
 		</Sticky>
 	);
@@ -198,15 +206,15 @@ export const TestStickyTransition = decorate('Transition', () => {
 	return (
 		<>
 			<FlexRoot flexDirection='column'>
-				<p>{transitionName} | {isSticky ? 'Sticky' : 'Regular'}</p>
-				<ScrollContainer ref={intersectRootRef}>
+				<p>{transitionName} | {isEarlySticky ? 'Early Sticky' : 'Not Early Sticky'} | {isSticky ? 'Sticky' : 'Regular'} | {renderCount}</p>
+				<ScrollContainer ref={rootRef}>
 					<Scroller >
 						<p>Test</p>
 						<Filler />
 						<p>Test</p>
 						<Filler />
 						<p>Test</p>
-						<div ref={intersectTargetRef}>
+						<div ref={containerTargetRef}>
 							{upperStickyRender}
 							<p>Test</p>
 							<Filler />
@@ -226,8 +234,8 @@ export const TestStickyTransition = decorate('Transition', () => {
 });
 
 interface TransitionStickyContentProps {
-	isSticky: boolean;
-	isDifferentHeightWhenSticky: boolean;
+	isChanged: boolean;
+	isDifferentHeight: boolean;
 }
 
 const TransitionStickyContent = styled.div<TransitionStickyContentProps>`
@@ -239,10 +247,10 @@ const TransitionStickyContent = styled.div<TransitionStickyContentProps>`
 	border: 4px solid transparent;
 	opacity: 1;
 
-	${p => p.isSticky && p.isDifferentHeightWhenSticky && css`
-		padding: .5rem 1rem;
+	${p => p.isDifferentHeight && css`
+		padding: .2rem 1rem;
 	`};
-	${p => p.isSticky && css`
+	${p => p.isChanged && css`
 		border: 4px solid green;
 		opacity: .7;
 	`};

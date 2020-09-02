@@ -7,8 +7,8 @@ export interface SimpleStickyInput {
 }
 
 export interface SimpleStickyOutput {
-	intersectTargetRef: React.RefObject<any>;
-	intersectRootRef: React.RefObject<any>;
+	containerTargetRef: React.RefObject<any>;
+	rootRef: React.RefObject<any>;
 	isSticky: boolean;
 }
 
@@ -18,8 +18,9 @@ export function useSimpleSticky(props: SimpleStickyInput): SimpleStickyOutput {
 	const { direction } = props;
 	const isTop = direction.toLowerCase() === 'top';
 
-	const [intersectTargetRef, intersect, intersectRootRef] = useControlledElementIntersect({
-		useRoot: true,
+	const rootRef = React.useRef<any>(null);
+	const [intersectTargetRef, intersect] = useControlledElementIntersect({
+		rootRef: rootRef,
 		threshold: threshold
 	});
 
@@ -29,8 +30,8 @@ export function useSimpleSticky(props: SimpleStickyInput): SimpleStickyOutput {
 	}
 
 	return {
-		intersectTargetRef: intersectTargetRef,
-		intersectRootRef: intersectRootRef,
+		containerTargetRef: intersectTargetRef,
+		rootRef: rootRef,
 		isSticky: isSticky,
 	};
 }

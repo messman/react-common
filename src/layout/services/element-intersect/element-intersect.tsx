@@ -28,7 +28,11 @@ export function createThreshold(sections?: number): number[] {
 }
 
 export interface ElementIntersectOptions extends Pick<IntersectionObserverInit, 'rootMargin' | 'threshold'> {
-	useRoot: boolean;
+	/**
+	 * The root element should be an ancestor of the target element - so we hopefully can assume that if the root element changes, so will the target.
+	 * This would mean we don't have to add some hacky logic to handle changes of the ancestor but not the target.
+	 */
+	rootRef?: React.MutableRefObject<any>;
 }
 
 export interface ElementIntersect extends IntersectionObserverEntry {
@@ -54,23 +58,19 @@ export interface ElementIntersectRelativePosition {
  * - Make sure your threshold input value is an unchanging reference - else this hook will always restart itself.
  * - There is no cleanup call to the callback.
  */
-export function useElementIntersect(observerOptions: ElementIntersectOptions, callback: (intersect: ElementIntersect) => void): [React.RefObject<any>, React.RefObject<any>] {
+export function useElementIntersect(observerOptions: ElementIntersectOptions, callback: (intersect: ElementIntersect) => void): React.RefObject<any> {
 
-	const { useRoot, rootMargin, threshold } = observerOptions;
+	const { rootRef, rootMargin, threshold } = observerOptions;
 
 	// Always use the latest version of the callback that is supplied.
 	const latestCallback = useLatestForLayoutEffect(callback);
-
-	// The root element should be an ancestor of the target element - so we hopefully can assume that if the root element changes, so will the target.
-	// This would mean we don't have to add some hacky logic to handle changes of the ancestor but not the target.
-	const rootElementRef = React.useRef<any>(null);
 
 	const targetElementRef = useRefLayoutEffect((targetElement: HTMLElement) => {
 		if (!targetElement) {
 			return;
 		}
 		let isCleanedUp = false;
-		const rootElement = useRoot ? (rootElementRef.current || null) : null;
+		const rootElement = rootRef ? (rootRef.current || null) : null;
 
 		function onChange(entry: IntersectionObserverEntry) {
 			if (!isCleanedUp) {
@@ -89,9 +89,9 @@ export function useElementIntersect(observerOptions: ElementIntersectOptions, ca
 			observer.unobserve(targetElement);
 			isCleanedUp = true;
 		};
-	}, [useRoot, rootMargin, threshold]);
+	}, [rootMargin, threshold]);
 
-	return [targetElementRef, rootElementRef];
+	return targetElementRef;
 };
 
 function noop() { };
@@ -104,16 +104,16 @@ function noop() { };
  * - Make sure your threshold input value is an unchanging reference - else this hook will always restart itself.
  * - There is no cleanup call to the callback.
  */
-export function useControlledElementIntersect(observerOptions: ElementIntersectOptions, callback?: (intersect: ElementIntersect) => void): [React.RefObject<any>, ElementIntersect | null, React.RefObject<any>] {
+export function useControlledElementIntersect(observerOptions: ElementIntersectOptions, callback?: (intersect: ElementIntersect) => void): [React.RefObject<any>, ElementIntersect | null] {
 
 	const [elementIntersect, setElementIntersect] = React.useState<ElementIntersect | null>(null);
 	const latestCallback = useLatestForLayoutEffect(callback || noop);
-	const [targetRef, rootRef] = useElementIntersect(observerOptions, (elementIntersect) => {
+	const targetRef = useElementIntersect(observerOptions, (elementIntersect) => {
 		latestCallback.current(elementIntersect);
 		setElementIntersect(elementIntersect);
 	});
 
-	return [targetRef, elementIntersect, rootRef];
+	return [targetRef, elementIntersect];
 };
 
 
