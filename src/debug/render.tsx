@@ -65,14 +65,17 @@ function setup() {
  * Counts the number of times a component with this name is created and rendered.
  * Makes the counts available on the window object (see console log after using).
 */
-export function useRenderCount(componentName: string) {
+export function useRenderCount(componentName: string): number {
 	setup();
 
 	const id = useUnique();
 	const renderKey = `${componentName}-${id}`;
 	const count = React.useRef(0);
-	count.current++;
-	counts.renders.set(renderKey, count.current);
+
+	React.useEffect(() => {
+		count.current++;
+		counts.renders.set(renderKey, count.current);
+	});
 
 	React.useEffect(() => {
 		// New mount
@@ -83,4 +86,6 @@ export function useRenderCount(componentName: string) {
 			counts.renders.delete(renderKey);
 		};
 	}, []);
+
+	return count.current;
 }
