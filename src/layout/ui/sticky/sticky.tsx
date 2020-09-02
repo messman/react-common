@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useElementIntersect, createThreshold } from '@/layout/services/element-intersect/element-intersect';
 import styled, { StyledComponent } from 'styled-components';
-import { useControlledElementSize } from '@/layout/services/element-size/element-size';
+import { useElementSize } from '@/layout/services/element-size/element-size';
 import { FlexColumn } from '../flex/flex';
 
 /*
@@ -57,7 +57,7 @@ export enum StickyTransition {
 	 * Like the carry transition, but using the sticky content height instead.
 	 * Made for scenarios where the sticky content height is different - otherwise, it works like the instant transition.
 	 * 
-	 * If no variable-height sticky content is provided, acts like 'carry'.
+	 * If no variable-height sticky content is provided, acts like 'instant'.
 	 * */
 	carryToVariableSticky
 }
@@ -81,22 +81,35 @@ const threshold = createThreshold();
 export function useSticky(input: StickyInput): StickyOutput {
 	const { direction, transition } = input;
 	const isTop = direction.toLowerCase() === 'top';
+	const needsRelativeContentHeight = transition !== StickyTransition.instant;
+	const needsVariableStickyContentHeight = needsRelativeContentHeight && (transition === StickyTransition.disappearToVariableSticky || transition === StickyTransition.carryToVariableSticky);
 
 	// Tracking the sticky state.
 	const [isSticky, setIsSticky] = React.useState(false);
 
 	// Track the height of our relative content to affect the intersection bounds (for certain transitions).
-	const [relativeContentSizeRef, relativeContentSize] = useControlledElementSize(0);
-	const relativeContentHeight = relativeContentSize.height;
-
+	const [relativeContentHeight, setRelativeContentHeight] = React.useState(-1);
 	// Track the height of our sticky content to affect the intersection bounds (for certain transitions).
-	const [variableStickyContentSizeRef, stickyContentSize] = useControlledElementSize(0);
-	const variableStickyContentHeight = stickyContentSize.height;
+	const [variableStickyContentHeight, setVariableStickyContentHeight] = React.useState(-1);
+
+	const relativeContentSizeRef = useElementSize(0, (_, height) => {
+		// Only update if we actually need this information.
+		if (needsRelativeContentHeight) {
+			setRelativeContentHeight(height);
+		}
+	});
+
+	const variableStickyContentSizeRef = useElementSize(0, (_, height) => {
+		// Only update if we actually need this information.
+		if (needsVariableStickyContentHeight) {
+			setVariableStickyContentHeight(height);
+		}
+	});
 
 	// For non-instant transitions, change the margin at which the root will intersect with the target.
 	// Make it equal to the target's height, so intersection only triggers after the element is gone.
 	let rootMargin: string | undefined = undefined;
-	if (relativeContentHeight > 0 && transition !== StickyTransition.instant) {
+	if (relativeContentHeight > 0 && needsRelativeContentHeight) {
 
 		// Default to zero in case we don't have sticky content height.
 		let heightOffset = 0;
@@ -105,7 +118,7 @@ export function useSticky(input: StickyInput): StickyOutput {
 			// For the disappear and carry transitions, we just look at the relative content height.
 			heightOffset = relativeContentHeight;
 		}
-		else if (variableStickyContentHeight > 0 && transition === StickyTransition.disappearToVariableSticky || transition === StickyTransition.carryToVariableSticky) {
+		else if (variableStickyContentHeight > 0 && needsVariableStickyContentHeight) {
 			// For the other transitions, use the space between the relative content height and the sticky content height.
 			heightOffset = relativeContentHeight - variableStickyContentHeight;
 		}
