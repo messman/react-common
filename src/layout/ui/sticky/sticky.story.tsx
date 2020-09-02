@@ -152,12 +152,10 @@ const SimpleStickyExample = styled.div<SimpleStickyExampleProps>`
 const transitions = {
 	instant: StickyTransition.instant,
 	disappear: StickyTransition.disappear,
-	replaceDisappear: StickyTransition.replaceDisappear,
-	replaceCarry: StickyTransition.replaceCarry,
 	carry: StickyTransition.carry,
 };
 
-export const TestStickyInstant = decorate('Transition', () => {
+export const TestStickyTransition = decorate('Transition', () => {
 
 	const direction = select('Direction', directions, directions.top) as keyof typeof directions;
 	const isTop = direction === 'top';
@@ -240,9 +238,3 @@ const TransitionStickyContent = styled.div<TransitionStickyContentProps>`
 		opacity: .7;
 	`};
 `;
-
-
-// const Temp = styled.div`
-// 	transform: scale(0deg);
-// 	will-change: transform;
-// `;

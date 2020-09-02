@@ -4,6 +4,37 @@ import styled, { StyledComponent } from 'styled-components';
 import { useControlledElementSize } from '@/layout/services/element-size/element-size';
 import { FlexColumn } from '../flex/flex';
 
+/*
+	This is a sticky component. It tries to fix these issues from simpler 'position: sticky' components:
+	- You can't tell when the component goes into 'sticky mode' so that you can change the UI.
+	- If you *can* tell when the component goes into 'sticky mode', you are still restricted from changing the height of the UI because that makes scrolling jarring.
+
+	Terminology: 'sticky mode' = sticky render / content, 'non sticky mode' = relative render / content.
+
+	This component tries to fix these problems with some optimizations and hacks:
+	- We use IntersectionObserver to detect when to go into 'sticky mode', instead of using a scroll listener.
+	- The sticky container is actually a div with no height, and the sticky content is shown by using overflow and Flex when we enter sticky render.
+	- There is a fake div that stores and fixes the height of the relative content so that changes in sticky content height won't affect the scroll. 
+		- This was previously achieved by just double-rendering the relative content, but doesn't seem like 'The React Way'.
+
+	Drawbacks to this:
+	- Since our sticky container has no height, the 'hiding' of the sticky content as the user scrolls past the container doesn't look like it should -
+		it overhangs. That can be fixed with extra margin by the consuming application.
+
+
+	There are 5 ways that I can think of that you'd want to handle the transition from relative to sticky:
+	- instant: the default, most like if you hadn't used this component at all. This is smooth but doesn't work well if the sticky content is smaller.
+	- disappear: the sticky content won't show until the relative content is completely off screen. I've seen quite a few like this online.
+		It means there is no real need to use CSS transitions between the relative and sticky content, but you probably want to use react-spring to animate in the sticky content.
+	- carry: A hybrid that I like, where the relative content is actually used as the sticky until its height is crossed, then it is substituted with sticky content.
+		This seems smoothest to me.
+
+	These last two are not possible without calculating the stick content's height, which wouldn't be known ahead of time:
+	- disappear-short: Like the disappear transition, but don't wait until all the relative content's height is gone - just enough for the sticky content.
+	- carry-short: Like the carry transition, but don't wait until all the relative content's height is crossed - just enough for the sticky content.
+*/
+
+
 export enum StickyTransition {
 	/**
 	 * Applies the sticky render as soon as possible. Uses the least code and is suitable when there are no changes in size during the transition.
@@ -13,18 +44,6 @@ export enum StickyTransition {
 	 * Doesn't apply the sticky render until the relative render has completely disappeared.
 	 */
 	disappear,
-	/**
-	 * Allows the relative render to begin disappearing.
-	 * Calculates the difference in heights between the relative and sticky renders and replaces when those heights match. If the sticky render height is less than
-	 * that of the relative render, this operates like the instant transition.
-	*/
-	replaceDisappear,
-	/**
-	 * Allows the relative render to begin sticking. 
-	 * Calculates the difference in heights between the relative and sticky renders and replaces when those heights match. If the sticky render height is less than
-	 * that of the relative render, this operates like the instant transition.
-	*/
-	replaceCarry,
 	/**
 	 * Uses the relative render as the sticky render until the original relative render box is disappeared, then triggers the sticky transition.
 	*/
