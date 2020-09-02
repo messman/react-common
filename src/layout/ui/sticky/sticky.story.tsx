@@ -157,11 +157,16 @@ const transitions = {
 
 export const TestStickyTransition = decorate('Transition', () => {
 
+	const useRelativeHeightContent = boolean('Use Relative Height Content', false);
+	const useChangingHeight = boolean('Use Changing Height With Relative Height Content', true);
+
 	const direction = select('Direction', directions, directions.top) as keyof typeof directions;
 	const isTop = direction === 'top';
 
 	const transition = select('Transition', transitions, transitions.instant) as StickyTransition;
 	const transitionName = StickyTransition[transition as unknown as keyof typeof StickyTransition];
+
+	///////////
 
 	const stickyInput: StickyInput = {
 		direction: direction,
@@ -170,20 +175,21 @@ export const TestStickyTransition = decorate('Transition', () => {
 	const stickyOutput = useSticky(stickyInput);
 	const { intersectRootRef, intersectTargetRef, isSticky } = stickyOutput;
 
-	const relativeContent = (
-		<TransitionStickyContent isSticky={false}>
+	const relativeHeightContent = !useRelativeHeightContent ? null : (
+		<TransitionStickyContent isSticky={false} isDifferentHeightWhenSticky={false}>
 			<p>Here's the {isTop ? 'Header' : 'Footer'}.</p>
 		</TransitionStickyContent>
 	);
 
-
 	const stickyRender = (
-		<Sticky output={stickyOutput} relativeContent={relativeContent}>
-			<TransitionStickyContent isSticky={isSticky}>
+		<Sticky output={stickyOutput} relativeHeightContent={relativeHeightContent}>
+			<TransitionStickyContent isSticky={isSticky} isDifferentHeightWhenSticky={useRelativeHeightContent && useChangingHeight}>
 				<p>Here's the sticky render {isSticky ? ' STICKY' : ''} {isTop ? 'Header' : 'Footer'}.</p>
 			</TransitionStickyContent>
 		</Sticky>
 	);
+
+	///////////
 
 	const upperStickyRender = isTop ? stickyRender : null;
 	const lowerStickyRender = isTop ? null : stickyRender;
@@ -220,6 +226,7 @@ export const TestStickyTransition = decorate('Transition', () => {
 
 interface TransitionStickyContentProps {
 	isSticky: boolean;
+	isDifferentHeightWhenSticky: boolean;
 }
 
 const TransitionStickyContent = styled.div<TransitionStickyContentProps>`
@@ -231,8 +238,10 @@ const TransitionStickyContent = styled.div<TransitionStickyContentProps>`
 	border: 4px solid transparent;
 	opacity: 1;
 
-	${p => p.isSticky && css`
+	${p => p.isSticky && p.isDifferentHeightWhenSticky && css`
 		padding: .5rem 1rem;
+	`};
+	${p => p.isSticky && css`
 		border: 4px solid green;
 		opacity: .7;
 	`};
