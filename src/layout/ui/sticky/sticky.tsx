@@ -14,13 +14,13 @@ import { FlexColumn } from '../flex/flex';
 	This component tries to fix these problems with some optimizations and hacks.
 	The main optimization is to use IntersectionObserver to detect when to go into 'sticky mode', instead of using a scroll listener.
 
-	The main hack is a prop that can take in 'relative height content':
-		- If the sticky is not passed any 'relative height content', then:
+	The main hack is a prop that can take in 'variable-height sticky content':
+		- If the sticky is not passed any 'variable-height sticky content', then:
 			- What is passed to 'children' is always visible, like the simple sticky.
 			- Changing the height just for the sticky content will result in a bad UI (because of animations and/or positioning).
 
-		- If the sticky is passed 'relative height content', then:
-			- The relative height content *may* be used for the relative render.
+		- If the sticky is passed 'variable-height sticky content', then:
+			- The variable-height sticky content *may* be used for the relative render.
 			- The zero-height trick is used: the sticky content is always rendered, but is invisible inside a zero-height sticky div.
 				- When the sticky render gets to the end of its container and begins to move offscreen, it will 'hang over' onto other UI elements. (See tests.)
 					- You can maybe fix this with some selective extra margin/padding in the UI.
@@ -35,7 +35,7 @@ export enum StickyTransition {
 	 * Applies the sticky render as soon as possible.
 	 * 
 	 * Relative content and sticky content should be the same height.
-	 * It is thus likely not necessary to provide relative height content.
+	 * Thus, don't provide variable-height sticky content.
 	*/
 	instant,
 	/**
@@ -50,16 +50,16 @@ export enum StickyTransition {
 	 * Like the disappear transition, but using the sticky content height instead.
 	 * Made for scenarios where the sticky content height is different - otherwise, it works like the instant transition.
 	 * 
-	 * MUST provide relative height content.
+	 * If no variable-height sticky content is provided, acts like 'instant'.
 	 * */
-	disappearToContent,
+	disappearToVariableSticky,
 	/**
 	 * Like the carry transition, but using the sticky content height instead.
 	 * Made for scenarios where the sticky content height is different - otherwise, it works like the instant transition.
 	 * 
-	 * MUST provide relative height content.
+	 * If no variable-height sticky content is provided, acts like 'carry'.
 	 * */
-	carryToContent
+	carryToVariableSticky
 }
 
 export interface StickyInput {
@@ -73,7 +73,7 @@ export interface StickyOutput {
 	intersectRootRef: React.RefObject<any>;
 	isSticky: boolean;
 	relativeContentSizeRef: React.RefObject<any>;
-	stickyContentSizeRef: React.RefObject<any>;
+	variableStickyContentSizeRef: React.RefObject<any>;
 }
 
 const threshold = createThreshold();
@@ -90,8 +90,8 @@ export function useSticky(input: StickyInput): StickyOutput {
 	const relativeContentHeight = relativeContentSize.height;
 
 	// Track the height of our sticky content to affect the intersection bounds (for certain transitions).
-	const [stickyContentSizeRef, stickyContentSize] = useControlledElementSize(0);
-	const stickyContentHeight = stickyContentSize.height;
+	const [variableStickyContentSizeRef, stickyContentSize] = useControlledElementSize(0);
+	const variableStickyContentHeight = stickyContentSize.height;
 
 	// For non-instant transitions, change the margin at which the root will intersect with the target.
 	// Make it equal to the target's height, so intersection only triggers after the element is gone.
@@ -105,9 +105,9 @@ export function useSticky(input: StickyInput): StickyOutput {
 			// For the disappear and carry transitions, we just look at the relative content height.
 			heightOffset = relativeContentHeight;
 		}
-		else if (stickyContentHeight > 0 && transition === StickyTransition.disappearToContent || transition === StickyTransition.carryToContent) {
+		else if (variableStickyContentHeight > 0 && transition === StickyTransition.disappearToVariableSticky || transition === StickyTransition.carryToVariableSticky) {
 			// For the other transitions, use the space between the relative content height and the sticky content height.
-			heightOffset = relativeContentHeight - stickyContentHeight;
+			heightOffset = relativeContentHeight - variableStickyContentHeight;
 		}
 
 		if (isTop) {
@@ -142,7 +142,7 @@ export function useSticky(input: StickyInput): StickyOutput {
 		intersectRootRef: intersectRootRef,
 		isSticky: isSticky,
 		relativeContentSizeRef: relativeContentSizeRef,
-		stickyContentSizeRef: stickyContentSizeRef,
+		variableStickyContentSizeRef: variableStickyContentSizeRef,
 	};
 }
 
@@ -151,14 +151,16 @@ export interface StickyProps {
 	/**
 	 * If provided, some transitions may use a different height for the sticky content. See implementation notes.
 	 */
-	relativeHeightContent?: JSX.Element | null;
+	variableHeightStickyContent?: JSX.Element | null;
 }
 
 export const Sticky: React.FC<StickyProps> = (props) => {
-	const { output, relativeHeightContent, children } = props;
-	const { input, isSticky, relativeContentSizeRef, stickyContentSizeRef } = output;
+	const { output, variableHeightStickyContent, children } = props;
+	const { input, isSticky, relativeContentSizeRef, variableStickyContentSizeRef } = output;
 	const { direction, transition } = input;
+
 	const isTop = direction === 'top';
+	const isCarry = transition === StickyTransition.carry || transition === StickyTransition.carryToVariableSticky;
 
 	/*
 		If we were supplied with a relative render, use it to calculate height (for disappear / carry logic).
@@ -166,21 +168,33 @@ export const Sticky: React.FC<StickyProps> = (props) => {
 	*/
 	let relativeRender: JSX.Element = null!;
 	let stickyRender: JSX.Element = null!;
-	if (relativeHeightContent) {
-		relativeRender = (
-			<div ref={relativeContentSizeRef}>
-				{relativeHeightContent}
-			</div>
-		);
+	if (variableHeightStickyContent) {
+
+		if (isCarry) {
+			relativeRender = (
+				<StickyContainer isZeroHeight={false} isSticky={!isSticky} dataDirection={direction}>
+					<div ref={relativeContentSizeRef}>
+						{children}
+					</div>
+				</StickyContainer>
+			);
+		}
+		else {
+			relativeRender = (
+				<div ref={relativeContentSizeRef}>
+					{children}
+				</div>
+			);
+		}
+
 
 		// Use zero-height container to hide the sticky content until it's needed.
 		const justifyContent = isTop ? 'flex-start' : 'flex-end';
-		const isVisible = transition === StickyTransition.carry || isSticky;
 		stickyRender = (
-			<StickyContainer isSticky={true} dataDirection={direction}>
-				<OverflowContentContainer justifyContent={justifyContent} isVisible={isVisible}>
-					<div ref={stickyContentSizeRef}>
-						{children}
+			<StickyContainer isZeroHeight={true} isSticky={true} dataDirection={direction}>
+				<OverflowContentContainer justifyContent={justifyContent} isVisible={isSticky}>
+					<div ref={variableStickyContentSizeRef}>
+						{variableHeightStickyContent}
 					</div>
 				</OverflowContentContainer>
 			</StickyContainer>
@@ -189,7 +203,7 @@ export const Sticky: React.FC<StickyProps> = (props) => {
 	else {
 		// We don't intend for the height to change.
 		stickyRender = (
-			<StickyContainer isSticky={true} dataDirection={direction}>
+			<StickyContainer isZeroHeight={false} isSticky={isCarry || isSticky} dataDirection={direction}>
 				<div ref={relativeContentSizeRef}>
 					{children}
 				</div>
@@ -211,15 +225,18 @@ export const Sticky: React.FC<StickyProps> = (props) => {
 interface StickyContainerProps {
 	dataDirection: 'top' | 'bottom';
 	isSticky: boolean;
+	isZeroHeight: boolean;
 }
 
 const StickyContainer = styled.div.attrs<StickyContainerProps>((p) => {
-	const { dataDirection, isSticky } = p;
+	const { dataDirection, isSticky, isZeroHeight } = p;
 	const style: Partial<CSSStyleDeclaration> = {
 		[dataDirection]: '0px',
 		position: isSticky ? 'sticky' : 'relative',
-		height: '0px'
 	};
+	if (isZeroHeight) {
+		style.height = '0px';
+	}
 
 	return {
 		style: style

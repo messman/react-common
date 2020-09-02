@@ -153,12 +153,13 @@ const transitions = {
 	instant: StickyTransition.instant,
 	disappear: StickyTransition.disappear,
 	carry: StickyTransition.carry,
+	disappearToVariableSticky: StickyTransition.disappearToVariableSticky,
+	carryToVariableSticky: StickyTransition.carryToVariableSticky,
 };
 
 export const TestStickyTransition = decorate('Transition', () => {
 
-	const useRelativeHeightContent = boolean('Use Relative Height Content', false);
-	const useChangingHeight = boolean('Use Changing Height With Relative Height Content', true);
+	const useChangingHeight = boolean('Use Changing Height', false);
 
 	const direction = select('Direction', directions, directions.top) as keyof typeof directions;
 	const isTop = direction === 'top';
@@ -175,24 +176,24 @@ export const TestStickyTransition = decorate('Transition', () => {
 	const stickyOutput = useSticky(stickyInput);
 	const { intersectRootRef, intersectTargetRef, isSticky } = stickyOutput;
 
-	const relativeHeightContent = !useRelativeHeightContent ? null : (
-		<TransitionStickyContent isSticky={false} isDifferentHeightWhenSticky={false}>
-			<p>Here's the {isTop ? 'Header' : 'Footer'}.</p>
+	const variableHeightStickyContent = !useChangingHeight ? null : (
+		<TransitionStickyContent isSticky={true} isDifferentHeightWhenSticky={true}>
+			<p>Here's the variable-height sticky {isTop ? 'Header' : 'Footer'}.</p>
 		</TransitionStickyContent>
 	);
 
-	const stickyRender = (
-		<Sticky output={stickyOutput} relativeHeightContent={relativeHeightContent}>
-			<TransitionStickyContent isSticky={isSticky} isDifferentHeightWhenSticky={useRelativeHeightContent && useChangingHeight}>
-				<p>Here's the sticky render {isSticky ? ' STICKY' : ''} {isTop ? 'Header' : 'Footer'}.</p>
+	const render = (
+		<Sticky output={stickyOutput} variableHeightStickyContent={variableHeightStickyContent}>
+			<TransitionStickyContent isSticky={isSticky} isDifferentHeightWhenSticky={false}>
+				<p>Here's the static {isTop ? 'Header' : 'Footer'}.</p>
 			</TransitionStickyContent>
 		</Sticky>
 	);
 
 	///////////
 
-	const upperStickyRender = isTop ? stickyRender : null;
-	const lowerStickyRender = isTop ? null : stickyRender;
+	const upperStickyRender = isTop ? render : null;
+	const lowerStickyRender = isTop ? null : render;
 
 	return (
 		<>
