@@ -9,12 +9,14 @@ export { clampPromise, clampPromiseMaximumTimeoutReason, usePromise, PromiseInit
 export { useRenderCount, useRenderDebug } from './debug/render';
 
 // Layout
+export { useElementIntersect, useControlledElementIntersect, ElementIntersect, ElementIntersectOptions, ElementIntersectRelativePosition, createElementIntersectObserver, createThreshold } from './layout/services/element-intersect/element-intersect';
 export { ElementScroll, useElementScroll } from './layout/services/element-scroll/element-scroll';
 export { ElementSize, useElementSize, ResizeObserverEntry, createElementSizeObserver, useControlledElementSize, getGlobalElementSizeObserver } from './layout/services/element-size/element-size';
 export { WindowDimensions, WindowDimensionsProvider, useWindowDimensions } from './layout/services/window-layout/window-dimensions';
 export { DefaultLayoutBreakpoint, LayoutOrientation, WindowLayout, WindowLayoutProvider, WindowLayoutProviderProps, useWindowLayout, defaultLowerBreakpoints } from './layout/services/window-layout/window-layout';
 export { Flex, FlexColumn, FlexParent, FlexProps, FlexRoot, FlexRow } from './layout/ui/flex/flex';
 export { Overlay, OverlayProps } from './layout/ui/overlay/overlay';
+export { Sticky, StickyInput, StickyOutput, StickyProps, useSticky } from './layout/ui/sticky/sticky';
 
 // Lifecycle
 export { useTruthyTimer, TruthyTimerOutput, getDebugTruthyTimerStatus, TruthyTimerState, TruthyTimerInitialInput, TruthyTimerResetInput } from './lifecycle/timer/timer';

@@ -2,7 +2,6 @@ import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { styled, css } from '@/test/styled';
 import { FlexRoot, Flex } from '../flex/flex';
-import { SimpleStickyInput, useSimpleSticky, SimpleSticky } from './sticky-simple';
 import { boolean, select } from '@storybook/addon-knobs';
 import { useSticky, Sticky } from './sticky';
 import { useRenderCount } from '@/debug/render';
@@ -76,76 +75,6 @@ export const TestStickyWithoutLibrary = decorate('Without Library', () => {
 		</>
 	);
 });
-
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-
-export const TestSimpleSticky = decorate('Simple', () => {
-
-	const useTop = boolean('Use Top Sticky', true);
-
-	const simpleStickyInput: SimpleStickyInput = {
-		direction: useTop ? 'top' : 'bottom'
-	};
-	const { isSticky, rootRef, containerTargetRef } = useSimpleSticky(simpleStickyInput);
-
-	const stickyRender = (
-		<SimpleSticky input={simpleStickyInput}>
-			<SimpleStickyExample isSticky={isSticky}>
-				<p>Here's the {useTop ? 'Header' : 'Footer'}.</p>
-			</SimpleStickyExample>
-		</SimpleSticky>
-	);
-
-	const upperStickyRender = useTop ? stickyRender : null;
-	const lowerStickyRender = useTop ? null : stickyRender;
-
-	return (
-		<>
-			<FlexRoot flexDirection='column'>
-				<p>Status: {isSticky ? 'Sticky' : 'Regular'}</p>
-				<ScrollContainer ref={rootRef}>
-					<Scroller >
-						<p>Test</p>
-						<Filler />
-						<Filler />
-						<p>Test</p>
-						<div ref={containerTargetRef}>
-							{upperStickyRender}
-							<p>Test</p>
-							<Filler />
-							<p>Test</p>
-							{lowerStickyRender}
-						</div>
-						<p>Test</p>
-						<Filler />
-						<Filler />
-						<p>Test</p>
-					</Scroller>
-				</ScrollContainer>
-			</FlexRoot>
-		</>
-	);
-});
-
-interface SimpleStickyExampleProps {
-	isSticky: boolean;
-}
-
-const SimpleStickyExample = styled.div<SimpleStickyExampleProps>`
-	padding: 1rem;
-	transition: all .2s linear;
-	transition-property: opacity, border-color;
-	background-color: ${p => p.theme.color.backgroundSecondary};
-
-	border: 2px solid transparent;
-	opacity: 1;
-
-	${p => p.isSticky && css`
-		border: 2px solid green;
-		opacity: .7;
-	`};
-`;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
