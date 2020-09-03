@@ -150,53 +150,83 @@ const SimpleStickyExample = styled.div<SimpleStickyExampleProps>`
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 
-const transitionNames = ['instant', 'half', 'almost', 'full', 'double'];
+const transitionNames = ['instant', 'half', 'full', 'double'];
 
 const transitions = {
 	instant: [0, undefined],
 	half: [.5, undefined],
-	almost: [1, -10],
 	full: [1, undefined],
 	double: [2, undefined]
 } as unknown as any;
+
 
 export const TestStickyTransition = decorate('Transition', () => {
 
 	const renderCount = useRenderCount('Test Sticky Transition');
 
-	const useChangingHeight = boolean('Use Changing Height', false);
-	const isStickyBeforeThreshold = boolean('Stick Before Threshold', true);
+	const useVariableContent = boolean('Use Variable Content', false);
+	const allowDisappear = boolean('Allow Disappear', false);
 
 	const direction = select('Direction', directions, directions.top) as keyof typeof directions;
 	const isTop = direction === 'top';
 
-	const transitionName = select('Transition', transitionNames, transitionNames[0]);
-	const [percent, pixels] = transitions[transitionName];
+	const firstTransitionName = select('First', transitionNames, transitionNames[0]);
+	const [firstFactor, firstPixels] = transitions[firstTransitionName];
+
+	const secondTransitionName = select('Second', transitionNames, transitionNames[0]);
+	const [secondFactor, secondPixels] = transitions[secondTransitionName];
 
 	///////////
+	//const isSticky = !isAtBoundary || isAtThreshold
+
 
 	const stickyOutput = useSticky({
 		direction: direction,
-		isStickyBeforeThreshold: isStickyBeforeThreshold,
-		thresholdFactor: percent,
-		thresholdPixels: pixels,
+		firstFactor: firstFactor,
+		firstPixels: firstPixels,
+		secondFactor: secondFactor,
+		secondPixels: secondPixels,
 		throttle: 0
 	});
-	const { rootRef, containerTargetRef, isAtBoundary, isAtThreshold } = stickyOutput;
+	const { rootRef, isAtFirst, isAtSecond } = stickyOutput;
 
-	const variableHeightStickyContent = (!useChangingHeight || !isAtBoundary) ? null : (
-		<TransitionStickyContent isChanged={isAtThreshold} isDifferentHeight={isAtThreshold}>
-			<p>Here's the variable-height sticky {isTop ? 'Header' : 'Footer'}.</p>
-		</TransitionStickyContent>
-	);
+	let render: JSX.Element = null!;
+	if (useVariableContent) {
 
-	const render = (
-		<Sticky output={stickyOutput} variableHeightStickyContent={variableHeightStickyContent}>
-			<TransitionStickyContent isChanged={isAtThreshold} isDifferentHeight={false}>
-				<p>Here's the child {isTop ? 'Header' : 'Footer'}.</p>
-			</TransitionStickyContent>
-		</Sticky>
-	);
+		const isSticky = allowDisappear ? (false) : (!isAtFirst);
+		const showVariableContent = allowDisappear ? (isAtFirst) : (isAtFirst);
+		const isChanged = allowDisappear ? (isAtSecond) : (isAtSecond);
+		const isDifferentHeight = allowDisappear ? (isAtSecond) : (isAtSecond);
+
+		let variableContent: JSX.Element | null = <div />;
+		if (showVariableContent) {
+			variableContent = (
+				<TransitionStickyContent isChanged={isChanged} isDifferentHeight={isDifferentHeight}>
+					<p>Here's the variable {isTop ? 'Header' : 'Footer'}.</p>
+				</TransitionStickyContent>
+			);
+		}
+
+		render = (
+			<Sticky output={stickyOutput} variableContent={variableContent} isSticky={isSticky}>
+				<TransitionStickyContent isChanged={false} isDifferentHeight={false}>
+					<p>Here's the regular {isTop ? 'Header' : 'Footer'}.</p>
+				</TransitionStickyContent>
+			</Sticky>
+		);
+	}
+	else {
+		const isSticky = allowDisappear ? (isAtFirst) : (true);
+		const isChanged = allowDisappear ? (isAtSecond) : (isAtFirst);
+
+		render = (
+			<Sticky output={stickyOutput} isSticky={isSticky}>
+				<TransitionStickyContent isChanged={isChanged} isDifferentHeight={false}>
+					<p>Here's the ONLY {isTop ? 'Header' : 'Footer'}.</p>
+				</TransitionStickyContent>
+			</Sticky>
+		);
+	}
 
 	///////////
 
@@ -206,7 +236,7 @@ export const TestStickyTransition = decorate('Transition', () => {
 	return (
 		<>
 			<FlexRoot flexDirection='column'>
-				<p>{transitionName} | {isAtBoundary ? 'At Boundary' : 'Before Boundary'} | {isAtThreshold ? 'At Threshold' : 'Before Threshold'} | {renderCount}</p>
+				<p>{firstTransitionName} / {secondTransitionName} | {isAtFirst ? 'At First' : 'Before First'} | {isAtSecond ? 'At Second' : 'Before Second'} | {renderCount}</p>
 				<ScrollContainer ref={rootRef}>
 					<Scroller >
 						<p>Test</p>
@@ -214,7 +244,7 @@ export const TestStickyTransition = decorate('Transition', () => {
 						<p>Test</p>
 						<Filler />
 						<p>Test</p>
-						<div ref={containerTargetRef}>
+						<div>
 							{upperStickyRender}
 							<p>Test</p>
 							<Filler />
@@ -239,7 +269,7 @@ interface TransitionStickyContentProps {
 }
 
 const TransitionStickyContent = styled.div<TransitionStickyContentProps>`
-	padding: 1rem;
+	padding: 2rem 1rem;
 	transition: all .5s linear;
 	transition-property: opacity, border-color, padding;
 	background-color: ${p => p.theme.color.backgroundSecondary};
