@@ -8,33 +8,72 @@ import { useElementSize } from '@/layout/services/element-size/element-size';
 		- You can't tell when the component goes into 'sticky mode' so that you can change the UI.
 		- If you *can* tell when the component goes into 'sticky mode', you are still restricted from changing the height of the UI because that makes scrolling jarring.
 
-	Terminology: 'sticky mode' = sticky render / content, 'non sticky mode' = relative render / content.
-
 	This component tries to fix these problems with some optimizations and hacks.
 	The main optimization is to use IntersectionObserver to detect when to go into 'sticky mode', instead of using a scroll listener.
+	IntersectionObserver doesn't run in the main thread.
 
-	The main hack is a prop that can take in 'variable-height sticky content':
+	There are some hacks:
+	1. We actually use IntersectionObserver twice - once on the container of the sticky, and again on the border of sticky itself (zero-height div).
+		This allows us to customize the transition into sticky mode for smoothness.
+	2. To support changing the height, you can pass in a prop of your 'variable-height sticky content':
 		- If the sticky is not passed any 'variable-height sticky content', then:
 			- What is passed to 'children' is always visible, like the simple sticky.
 			- Changing the height just for the sticky content will result in a bad UI (because of animations and/or positioning).
-
 		- If the sticky is passed 'variable-height sticky content', then:
 			- The variable-height sticky content *may* be used for the relative render.
-			- The zero-height trick is used: the sticky content is always rendered, but is invisible inside a zero-height sticky div.
+			- A zero-height-div trick is used: the sticky content is always rendered, but is invisible inside a zero-height sticky div.
 				- When the sticky render gets to the end of its container and begins to move offscreen, it will 'hang over' onto other UI elements. (See tests.)
 					- You can maybe fix this with some selective extra margin/padding in the UI.
 			- You can change the sticky content height since it is disconnected from the relative content.
-	
-	Beyond all this, there can be variation in exactly when we enter 'sticky mode' to show the sticky render. See the enum.
+
+
+	Terminology:
+		- Boundary: basically, the area where it would be valid for the sticky to be in 'position: sticky'.
+		- Threshold: the custom spot where we can specify the 'position: sticky' to be applied or just for us to be notified.
 */
 
 export interface StickyInput {
+	/**
+	 * Default: 'top'.
+	 * Whether the sticky will be a header (top) or a footer (bottom).
+	 */
 	direction: 'top' | 'bottom';
-	useEarlySticky: boolean;
-	thresholdPercent?: number;
-	thresholdPixels?: number;
-	throttle?: number;
+	/**
+	 * Default: true.
+	 * If true, behaves like 'position: sticky'; the sticky will stick 
+	 * to its container at the boundary, before we are notified of the threshold.
+	 */
+	isStickyBeforeThreshold: boolean;
+	/**
+	 * Default: 0.
+	 * Factor is relative to the height of the child content of the sticky.
+	 * 0 means the threshold is the same as the boundary.
+	 * .5 means the threshold is at half the height of the sticky child content.
+	 * 1 means the threshold is met after the sticky is entirely out of view.
+	 */
+	thresholdFactor: number;
+	/**
+	 * Default: 0.
+	 * Pixels are added to the threshold factor to fine-tune the total threshold distance.
+	 * May be positive or negative.
+	 */
+	thresholdPixels: number;
+	/**
+	 * Default: 0.
+	 * Throttle for detecting changes in height of the sticky's child content.
+	 */
+	throttle: number;
 }
+
+const defaultStickyInput: StickyInput = {
+	// See comments above
+	direction: 'top',
+	isStickyBeforeThreshold: true,
+	thresholdFactor: 0,
+	thresholdPixels: 0,
+	throttle: 0
+};
+
 
 export interface StickyOutput {
 	input: StickyInput;
@@ -42,15 +81,16 @@ export interface StickyOutput {
 	containerTargetRef: React.RefObject<any>;
 	boundaryTargetRef: React.RefObject<any>;
 	relativeContentSizeRef: React.RefObject<any>;
-	isSticky: boolean;
-	isEarlySticky: boolean;
+	isAtBoundary: boolean;
+	isAtThreshold: boolean;
 }
 
 // Default threshold that just triggers on full intersect and first intersect.
 const defaultThreshold = createThreshold();
 
-export function useSticky(input: StickyInput): StickyOutput {
-	const { direction, thresholdPercent, thresholdPixels, useEarlySticky, throttle } = input;
+export function useSticky(input: Partial<StickyInput>): StickyOutput {
+	const safeInput = Object.assign({}, defaultStickyInput, input);
+	const { direction, thresholdFactor, thresholdPixels, throttle } = safeInput;
 
 	const isTop = direction.toLowerCase() === 'top';
 
@@ -62,8 +102,8 @@ export function useSticky(input: StickyInput): StickyOutput {
 	}, []);
 
 	// Tracking the sticky state.
-	const [isSticky, setIsSticky] = React.useState(false);
-	const [isEarlySticky, setIsEarlySticky] = React.useState(false);
+	const [isAtBoundary, setIsAtBoundary] = React.useState(false);
+	const [isAtThreshold, setIsAtThreshold] = React.useState(false);
 
 	// Track the height of our relative content to affect the intersection bounds (for certain transitions).
 	const setRelativeContentHeight = React.useState(-1)[1];
@@ -73,15 +113,15 @@ export function useSticky(input: StickyInput): StickyOutput {
 
 	// From top: 0 means instant, 1 means full height.
 	let trueThresholdPixels = 0;
-	let needsRelativeContentHeight = Number.isFinite(thresholdPercent) && thresholdPercent !== 0;
+	let needsRelativeContentHeight = Number.isFinite(thresholdFactor) && thresholdFactor !== 0;
 	if (needsRelativeContentHeight && relativeContentHeight > 0) {
-		trueThresholdPixels = thresholdPercent! * relativeContentHeight;
+		trueThresholdPixels = thresholdFactor! * relativeContentHeight;
 	}
 	if (Number.isFinite(thresholdPixels)) {
 		trueThresholdPixels += thresholdPixels!;
 	}
 
-	const relativeContentSizeRef = useElementSize(throttle || 0, (_, height) => {
+	const relativeContentSizeRef = useElementSize(throttle, (_, height) => {
 		if (isCleanedUpRef.current) {
 			return;
 		}
@@ -118,7 +158,7 @@ export function useSticky(input: StickyInput): StickyOutput {
 			If we are using a sticky header, the header should be sticky whenever the target area is above the root - 
 			even if that means the target area is far above the root and no longer intersecting.
 		*/
-		setIsSticky(isTop ? intersect.top.isBefore : intersect.bottom.isAfter);
+		setIsAtThreshold(isTop ? intersect.top.isBefore : intersect.bottom.isAfter);
 	});
 
 	// This end target is a zero-height div that sits above/below our sticky component, to fill in a gap of knowledge in the intersection above.
@@ -131,16 +171,16 @@ export function useSticky(input: StickyInput): StickyOutput {
 		if (!intersect || isCleanedUpRef.current) {
 			return;
 		}
-		setIsEarlySticky(isTop ? intersect.top.isBefore : intersect.bottom.isAfter);
+		setIsAtBoundary(isTop ? intersect.top.isBefore : intersect.bottom.isAfter);
 	});
 
 	return {
-		input: input,
+		input: safeInput,
 		rootRef: rootRef,
 		containerTargetRef: containerTargetRef,
 		boundaryTargetRef: boundaryTargetRef,
-		isSticky: isSticky,
-		isEarlySticky: useEarlySticky && isEarlySticky,
+		isAtBoundary: isAtBoundary,
+		isAtThreshold: isAtThreshold,
 		relativeContentSizeRef: relativeContentSizeRef,
 	};
 }
@@ -155,8 +195,8 @@ export interface StickyProps {
 
 export const Sticky: React.FC<StickyProps> = (props) => {
 	const { output, variableHeightStickyContent, children } = props;
-	const { input, isSticky, relativeContentSizeRef, boundaryTargetRef } = output;
-	const { direction, useEarlySticky } = input;
+	const { input, isAtThreshold, relativeContentSizeRef, boundaryTargetRef } = output;
+	const { direction, isStickyBeforeThreshold } = input;
 
 	const isTop = direction === 'top';
 
@@ -167,13 +207,10 @@ export const Sticky: React.FC<StickyProps> = (props) => {
 	let relativeRender: JSX.Element = null!;
 	let stickyRender: JSX.Element = null!;
 	if (variableHeightStickyContent) {
-
-		if (useEarlySticky) {
+		if (isStickyBeforeThreshold) {
 			relativeRender = (
-				<StickyContainer isZeroHeight={false} isSticky={!isSticky} dataDirection={direction}>
-					<div ref={relativeContentSizeRef}>
-						{children}
-					</div>
+				<StickyContainer ref={relativeContentSizeRef} isZeroHeight={false} isPositionSticky={!isAtThreshold} dataDirection={direction}>
+					{children}
 				</StickyContainer>
 			);
 		}
@@ -186,7 +223,7 @@ export const Sticky: React.FC<StickyProps> = (props) => {
 		}
 
 		stickyRender = (
-			<StickyContainer isZeroHeight={true} isSticky={true} dataDirection={direction}>
+			<StickyContainer isZeroHeight={true} isPositionSticky={true} dataDirection={direction}>
 				{variableHeightStickyContent}
 			</StickyContainer>
 		);
@@ -194,10 +231,8 @@ export const Sticky: React.FC<StickyProps> = (props) => {
 	else {
 		// We don't intend for the height to change.
 		stickyRender = (
-			<StickyContainer isZeroHeight={false} isSticky={useEarlySticky || isSticky} dataDirection={direction}>
-				<div ref={relativeContentSizeRef}>
-					{children}
-				</div>
+			<StickyContainer ref={relativeContentSizeRef} isZeroHeight={false} isPositionSticky={isStickyBeforeThreshold || isAtThreshold} dataDirection={direction}>
+				{children}
 			</StickyContainer>
 		);
 	}
@@ -223,16 +258,16 @@ export const Sticky: React.FC<StickyProps> = (props) => {
 
 interface StickyContainerProps {
 	dataDirection: 'top' | 'bottom';
-	isSticky: boolean;
+	isPositionSticky: boolean;
 	isZeroHeight: boolean;
 }
 
 const StickyContainer = styled.div.attrs<StickyContainerProps>((p) => {
-	const { dataDirection, isSticky, isZeroHeight } = p;
+	const { dataDirection, isPositionSticky, isZeroHeight } = p;
 	const style: Partial<CSSStyleDeclaration> = {
 		[dataDirection]: '0px',
 	};
-	if (isSticky) {
+	if (isPositionSticky) {
 		style.position = 'sticky';
 	}
 	if (isZeroHeight) {

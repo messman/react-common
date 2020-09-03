@@ -4,7 +4,7 @@ import { styled, css } from '@/test/styled';
 import { FlexRoot, Flex } from '../flex/flex';
 import { SimpleStickyInput, useSimpleSticky, SimpleSticky } from './sticky-simple';
 import { boolean, select } from '@storybook/addon-knobs';
-import { StickyInput, useSticky, Sticky } from './sticky';
+import { useSticky, Sticky } from './sticky';
 import { useRenderCount } from '@/debug/render';
 
 export default { title: 'Layout/UI/Sticky' };
@@ -165,7 +165,7 @@ export const TestStickyTransition = decorate('Transition', () => {
 	const renderCount = useRenderCount('Test Sticky Transition');
 
 	const useChangingHeight = boolean('Use Changing Height', false);
-	const useEarlySticky = boolean('Use Early Sticky', false);
+	const isStickyBeforeThreshold = boolean('Stick Before Threshold', true);
 
 	const direction = select('Direction', directions, directions.top) as keyof typeof directions;
 	const isTop = direction === 'top';
@@ -175,24 +175,24 @@ export const TestStickyTransition = decorate('Transition', () => {
 
 	///////////
 
-	const stickyInput: StickyInput = {
+	const stickyOutput = useSticky({
 		direction: direction,
-		useEarlySticky: useEarlySticky,
-		thresholdPercent: percent,
-		thresholdPixels: pixels
-	};
-	const stickyOutput = useSticky(stickyInput);
-	const { rootRef, containerTargetRef, isSticky, isEarlySticky } = stickyOutput;
+		isStickyBeforeThreshold: isStickyBeforeThreshold,
+		thresholdFactor: percent,
+		thresholdPixels: pixels,
+		throttle: 0
+	});
+	const { rootRef, containerTargetRef, isAtBoundary, isAtThreshold } = stickyOutput;
 
-	const variableHeightStickyContent = !useChangingHeight ? null : (
-		<TransitionStickyContent isChanged={isEarlySticky || isSticky} isDifferentHeight={isSticky}>
+	const variableHeightStickyContent = (!useChangingHeight || !isAtBoundary) ? null : (
+		<TransitionStickyContent isChanged={isAtThreshold} isDifferentHeight={isAtThreshold}>
 			<p>Here's the variable-height sticky {isTop ? 'Header' : 'Footer'}.</p>
 		</TransitionStickyContent>
 	);
 
 	const render = (
 		<Sticky output={stickyOutput} variableHeightStickyContent={variableHeightStickyContent}>
-			<TransitionStickyContent isChanged={isEarlySticky || isSticky} isDifferentHeight={false}>
+			<TransitionStickyContent isChanged={isAtThreshold} isDifferentHeight={false}>
 				<p>Here's the child {isTop ? 'Header' : 'Footer'}.</p>
 			</TransitionStickyContent>
 		</Sticky>
@@ -206,7 +206,7 @@ export const TestStickyTransition = decorate('Transition', () => {
 	return (
 		<>
 			<FlexRoot flexDirection='column'>
-				<p>{transitionName} | {isEarlySticky ? 'Early Sticky' : 'Not Early Sticky'} | {isSticky ? 'Sticky' : 'Regular'} | {renderCount}</p>
+				<p>{transitionName} | {isAtBoundary ? 'At Boundary' : 'Before Boundary'} | {isAtThreshold ? 'At Threshold' : 'Before Threshold'} | {renderCount}</p>
 				<ScrollContainer ref={rootRef}>
 					<Scroller >
 						<p>Test</p>
