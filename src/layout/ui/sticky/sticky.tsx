@@ -30,6 +30,12 @@ export interface StickyInput {
 	direction: 'top' | 'bottom';
 	/**
 	 * Default: 0. [0,Infinity)
+	 * Used to set when the sticky enters sticky mode. Matches the value of the 'top' or 'bottom' css property
+	 * with position: sticky.
+	 */
+	offsetPixels: number;
+	/**
+	 * Default: 0. [0,Infinity)
 	 * Factor is relative to the height of the child content.
 	 * 0 is the start of the child content; .5 is half its height; 1 is its full height.
 	 */
@@ -60,6 +66,7 @@ export interface StickyInput {
 const defaultStickyInput: StickyInput = {
 	// See comments above
 	direction: 'top',
+	offsetPixels: 0,
 	firstFactor: 0,
 	firstPixels: 0,
 	secondFactor: 0,
@@ -85,7 +92,7 @@ const defaultThreshold = createThreshold();
 
 export function useSticky(input: Partial<StickyInput>): StickyOutput {
 	const safeInput = Object.assign({}, defaultStickyInput, input);
-	const { direction, firstFactor, firstPixels, secondFactor, secondPixels, throttle } = safeInput;
+	const { direction, offsetPixels, firstFactor, firstPixels, secondFactor, secondPixels, throttle } = safeInput;
 
 	const isTop = direction.toLowerCase() === 'top';
 
@@ -115,7 +122,7 @@ export function useSticky(input: Partial<StickyInput>): StickyOutput {
 
 	const firstTargetRef = useElementIntersect({
 		rootRef: rootRef,
-		rootMargin: calculateRootMargin(isTop, relativeContentHeight, firstFactor, firstPixels),
+		rootMargin: calculateRootMargin(isTop, offsetPixels, relativeContentHeight, firstFactor, firstPixels),
 		threshold: defaultThreshold
 	}, (intersect) => {
 		if (!intersect || isCleanedUpRef.current) {
@@ -131,7 +138,7 @@ export function useSticky(input: Partial<StickyInput>): StickyOutput {
 
 	const secondTargetRef = useElementIntersect({
 		rootRef: rootRef,
-		rootMargin: calculateRootMargin(isTop, relativeContentHeight, secondFactor, secondPixels),
+		rootMargin: calculateRootMargin(isTop, offsetPixels, relativeContentHeight, secondFactor, secondPixels),
 		threshold: defaultThreshold
 	}, (intersect) => {
 		if (!intersect || isCleanedUpRef.current) {
@@ -152,7 +159,7 @@ export function useSticky(input: Partial<StickyInput>): StickyOutput {
 	};
 }
 
-function calculateRootMargin(isTop: boolean, height: number, factor: number, pixels: number): string | undefined {
+function calculateRootMargin(isTop: boolean, offsetPixels: number, height: number, factor: number, pixels: number): string | undefined {
 	// From top: 0 means instant, 1 means full height.
 	let truePixels = 0;
 	if (Number.isFinite(factor) && factor !== 0 && height > 0) {
@@ -161,6 +168,8 @@ function calculateRootMargin(isTop: boolean, height: number, factor: number, pix
 	if (Number.isFinite(pixels)) {
 		truePixels += pixels!;
 	}
+	// This is usually 0.
+	truePixels -= offsetPixels;
 	// For non-instant transitions, change the margin at which the root will intersect with the target.
 	// Make it equal to the target's height, for example, so intersection only triggers after the element is gone.
 	let rootMargin: string | undefined = undefined;
@@ -170,7 +179,7 @@ function calculateRootMargin(isTop: boolean, height: number, factor: number, pix
 	return rootMargin;
 }
 
-export interface StickyProps {
+export interface StickyProps extends React.HTMLAttributes<HTMLDivElement> {
 	output: StickyOutput;
 	/**
 	 * If provided, some transitions may use a different height for the sticky content. See implementation notes.
@@ -180,17 +189,21 @@ export interface StickyProps {
 	 * Sets the sticky behavior for the child content. Does not affect the variable content, which is always sticky.
 	 */
 	isSticky?: boolean;
+	/**
+	 * If set, provides a z-index value for all sticky content.
+	 */
+	zIndex?: number;
 }
 
 export const Sticky: React.FC<StickyProps> = (props) => {
-	const { output, variableContent, isSticky, children } = props;
+	const { output, variableContent, isSticky, children, zIndex } = props;
 	const { input, relativeContentSizeRef, firstTargetRef, secondTargetRef } = output;
-	const { direction } = input;
+	const { direction, offsetPixels } = input;
 
 	const isTop = direction === 'top';
 
 	const relativeRender = (
-		<StickyContainer ref={relativeContentSizeRef} isZeroHeight={false} isPositionSticky={!!isSticky} dataDirection={direction}>
+		<StickyContainer ref={relativeContentSizeRef} offsetPixels={offsetPixels} isZeroHeight={false} isPositionSticky={!!isSticky} dataDirection={direction} zIndex={zIndex}>
 			{children}
 		</StickyContainer>
 	);
@@ -198,7 +211,7 @@ export const Sticky: React.FC<StickyProps> = (props) => {
 	let variableRender: JSX.Element | null = null;
 	if (variableContent) {
 		variableRender = (
-			<StickyContainer isZeroHeight={true} isPositionSticky={true} dataDirection={direction}>
+			<StickyContainer offsetPixels={offsetPixels} isZeroHeight={true} isPositionSticky={true} dataDirection={direction} zIndex={zIndex}>
 				{variableContent}
 			</StickyContainer>
 		);
@@ -231,16 +244,18 @@ export const Sticky: React.FC<StickyProps> = (props) => {
 
 interface StickyContainerProps {
 	dataDirection: 'top' | 'bottom';
+	offsetPixels: number;
 	isPositionSticky: boolean;
 	isZeroHeight: boolean;
+	zIndex?: number;
 }
 
 const StickyContainer = styled.div.attrs<StickyContainerProps>((p) => {
-	const { dataDirection, isPositionSticky, isZeroHeight } = p;
+	const { dataDirection, offsetPixels, isPositionSticky, isZeroHeight, zIndex } = p;
 	const style: Partial<CSSStyleDeclaration> = {};
 	if (isPositionSticky) {
 		style.position = 'sticky';
-		style[dataDirection] = '0px';
+		style[dataDirection] = offsetPixels + 'px';
 	}
 	if (isZeroHeight) {
 		style.height = '0px';
@@ -250,6 +265,9 @@ const StickyContainer = styled.div.attrs<StickyContainerProps>((p) => {
 			style.flexDirection = 'column';
 			style.justifyContent = 'flex-end';
 		}
+	}
+	if (Number.isFinite(zIndex)) {
+		style.zIndex = zIndex!.toString();
 	}
 	return {
 		style: style

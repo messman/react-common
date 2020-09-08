@@ -50,25 +50,25 @@ export const TestStickyWithoutLibrary = decorate('Without Library', () => {
 				<p>Some other content</p>
 				<ScrollContainer>
 					<Scroller>
-						<p>Test</p>
+						<Text />
 						<Filler />
 						<Filler />
-						<p>Test</p>
+						<Text />
 						<div>
 							<SimpleStickyHeader>
 								<p>Here's the Header.</p>
 							</SimpleStickyHeader>
-							<p>Test</p>
+							<Text />
 							<Filler />
-							<p>Test</p>
+							<Text />
 							<SimpleStickyFooter>
 								<p>Here's the Footer.</p>
 							</SimpleStickyFooter>
 						</div>
-						<p>Test</p>
+						<Text />
 						<Filler />
 						<Filler />
-						<p>Test</p>
+						<Text />
 					</Scroller>
 				</ScrollContainer>
 			</FlexRoot>
@@ -88,6 +88,7 @@ const transitions = {
 	double: [2, undefined]
 } as unknown as any;
 
+const offset = 50;
 
 export const TestStickyTransition = decorate('Transition', () => {
 
@@ -95,6 +96,8 @@ export const TestStickyTransition = decorate('Transition', () => {
 
 	const useVariableContent = boolean('Use Variable Content', false);
 	const allowDisappear = boolean('Allow Disappear', false);
+	const useZIndex = boolean('Use Z-Index', true);
+	const useOffset = boolean(`Use ${offset}px Offset`, false);
 
 	const direction = select('Direction', directions, directions.top) as keyof typeof directions;
 	const isTop = direction === 'top';
@@ -111,6 +114,7 @@ export const TestStickyTransition = decorate('Transition', () => {
 
 	const stickyOutput = useSticky({
 		direction: direction,
+		offsetPixels: useOffset ? offset : 0,
 		firstFactor: firstFactor,
 		firstPixels: firstPixels,
 		secondFactor: secondFactor,
@@ -118,6 +122,8 @@ export const TestStickyTransition = decorate('Transition', () => {
 		throttle: 0
 	});
 	const { rootRef, isAtFirst, isAtSecond } = stickyOutput;
+
+	const zIndex = useZIndex ? 5 : undefined;
 
 	let render: JSX.Element = null!;
 	if (useVariableContent) {
@@ -137,7 +143,7 @@ export const TestStickyTransition = decorate('Transition', () => {
 		}
 
 		render = (
-			<Sticky output={stickyOutput} variableContent={variableContent} isSticky={isSticky}>
+			<Sticky output={stickyOutput} variableContent={variableContent} isSticky={isSticky} zIndex={zIndex}>
 				<TransitionStickyContent isChanged={false} isDifferentHeight={false}>
 					<p>Here's the regular {isTop ? 'Header' : 'Footer'}.</p>
 				</TransitionStickyContent>
@@ -149,7 +155,7 @@ export const TestStickyTransition = decorate('Transition', () => {
 		const isChanged = allowDisappear ? (isAtSecond) : (isAtFirst);
 
 		render = (
-			<Sticky output={stickyOutput} isSticky={isSticky}>
+			<Sticky output={stickyOutput} isSticky={isSticky} zIndex={zIndex}>
 				<TransitionStickyContent isChanged={isChanged} isDifferentHeight={false}>
 					<p>Here's the ONLY {isTop ? 'Header' : 'Footer'}.</p>
 				</TransitionStickyContent>
@@ -168,23 +174,23 @@ export const TestStickyTransition = decorate('Transition', () => {
 				<p>{firstTransitionName} / {secondTransitionName} | {isAtFirst ? 'At First' : 'Before First'} | {isAtSecond ? 'At Second' : 'Before Second'} | {renderCount}</p>
 				<ScrollContainer ref={rootRef}>
 					<Scroller >
-						<p>Test</p>
+						<Text />
 						<Filler />
-						<p>Test</p>
+						<Text />
 						<Filler />
-						<p>Test</p>
+						<Text />
 						<div>
 							{upperStickyRender}
-							<p>Test</p>
+							<Text />
 							<Filler />
-							<p>Test</p>
+							<Text />
 							{lowerStickyRender}
 						</div>
-						<p>Test</p>
+						<Text />
 						<Filler />
-						<p>Test</p>
+						<Text />
 						<Filler />
-						<p>Test</p>
+						<Text />
 					</Scroller>
 				</ScrollContainer>
 			</FlexRoot>
@@ -213,4 +219,17 @@ const TransitionStickyContent = styled.div<TransitionStickyContentProps>`
 		border: 4px solid green;
 		opacity: .7;
 	`};
+`;
+
+const Text: React.FC = () => {
+	return (
+		<div>
+			<Para>Here is some regular text.</Para>
+		</div>
+	);
+};
+
+const Para = styled.p`
+	margin: 1rem;
+	z-index: 1;
 `;

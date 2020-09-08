@@ -70,7 +70,6 @@ export const GlobalStyles = createGlobalStyle<ThemeProps<Theme>>`
 		vertical-align: top;
 		-webkit-text-size-adjust: 100%;
 		box-sizing: border-box;
-		z-index: 1;
 	}
 `;
 
