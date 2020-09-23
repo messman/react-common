@@ -2,7 +2,7 @@ import * as React from 'react';
 import { decorate } from '@/test/decorate';
 import { styled, css } from '@/test/styled';
 import { FlexRoot, Flex } from '../flex/flex';
-import { boolean, select } from '@storybook/addon-knobs';
+import { boolean, number, select } from '@storybook/addon-knobs';
 import { useSticky, Sticky } from './sticky';
 import { useRenderCount } from '@/debug/render';
 
@@ -111,17 +111,18 @@ export const TestStickyTransition = decorate('Transition', () => {
 	///////////
 	//const isSticky = !isAtBoundary || isAtThreshold
 
-
+	const rootRef = React.useRef<any>(null!);
 	const stickyOutput = useSticky({
 		direction: direction,
 		offsetPixels: useOffset ? offset : 0,
+		rootRef: rootRef,
 		firstFactor: firstFactor,
 		firstPixels: firstPixels,
 		secondFactor: secondFactor,
 		secondPixels: secondPixels,
 		throttle: 0
 	});
-	const { rootRef, isAtFirst, isAtSecond } = stickyOutput;
+	const { isAtFirst, isAtSecond } = stickyOutput;
 
 	const zIndex = useZIndex ? 5 : undefined;
 
@@ -233,3 +234,70 @@ const Para = styled.p`
 	margin: 1rem;
 	z-index: 1;
 `;
+
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+
+export const TestZeroHeight = decorate('Zero Height Content', () => {
+
+	const firstPixels = number('First Pixels', 80, { min: 0, max: 200, step: 10 });
+	const secondPixels = number('Second Pixels', 150, { min: 0, max: 200, step: 10 });
+
+	const rootRef = React.useRef<any>(null!);
+	const stickyOutput = useSticky({
+		rootRef: rootRef,
+		firstPixels: firstPixels,
+		secondPixels: secondPixels,
+	});
+	const { isAtFirst, isAtSecond } = stickyOutput;
+
+	const zIndex = 5;
+
+	let render: JSX.Element = null!;
+
+	const isSticky = true;
+	const showVariableContent = isAtFirst;
+	const isChanged = isAtSecond;
+	const isDifferentHeight = isAtSecond;
+
+	let variableContent: JSX.Element | null = <div />;
+	if (showVariableContent) {
+		variableContent = (
+			<TransitionStickyContent isChanged={isChanged} isDifferentHeight={isDifferentHeight}>
+				<p>Here's the variable Header.</p>
+			</TransitionStickyContent>
+		);
+	}
+
+	render = (
+		<Sticky output={stickyOutput} variableContent={variableContent} isSticky={isSticky} zIndex={zIndex} />
+	);
+
+	return (
+		<>
+			<FlexRoot flexDirection='column'>
+				<p>{isAtFirst ? 'At First' : 'Before First'} | {isAtSecond ? 'At Second' : 'Before Second'}</p>
+				<ScrollContainer ref={rootRef}>
+					<Scroller >
+						<Text />
+						<Filler />
+						<Text />
+						<Filler />
+						<Text />
+						<div>
+							{render}
+							<Text />
+							<Filler />
+							<Text />
+						</div>
+						<Text />
+						<Filler />
+						<Text />
+						<Filler />
+						<Text />
+					</Scroller>
+				</ScrollContainer>
+			</FlexRoot>
+		</>
+	);
+});

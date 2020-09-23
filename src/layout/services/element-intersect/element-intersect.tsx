@@ -29,10 +29,14 @@ export function createThreshold(sections?: number): number[] {
 
 export interface ElementIntersectOptions extends Pick<IntersectionObserverInit, 'rootMargin' | 'threshold'> {
 	/**
-	 * The root element should be an ancestor of the target element - so we hopefully can assume that if the root element changes, so will the target.
-	 * This would mean we don't have to add some hacky logic to handle changes of the ancestor but not the target.
+	 * The root element should be an ancestor of the target element. However, if the root is in a parent *component*, then this ref won't yet be set.
+	 * If that's your issue, you need to react to changes in the root element, so use the other root option.
 	 */
 	rootRef?: React.MutableRefObject<any>;
+	/**
+	 * Used when not supplying the element via a ref.
+	 */
+	rootElement?: HTMLElement | null;
 }
 
 export interface ElementIntersect extends IntersectionObserverEntry {
@@ -52,7 +56,7 @@ export interface ElementIntersectRelativePosition {
 
 /**
  * Tracks intersection of a target element with the viewport or with a root element.
- * Returns an array of [targetRef, rootRef]. If rootRef is not applied to an element, then the viewport is used. The root element must be an ancestor of the target.
+ * Returns the target ref.
  * 
  * NOTES:
  * - Make sure your threshold input value is an unchanging reference - else this hook will always restart itself.
@@ -60,7 +64,7 @@ export interface ElementIntersectRelativePosition {
  */
 export function useElementIntersect(observerOptions: ElementIntersectOptions, callback: (intersect: ElementIntersect) => void): React.RefObject<any> {
 
-	const { rootRef, rootMargin, threshold } = observerOptions;
+	const { rootRef, rootElement, rootMargin, threshold } = observerOptions;
 
 	// Always use the latest version of the callback that is supplied.
 	const latestCallback = useLatestForLayoutEffect(callback);
@@ -69,8 +73,8 @@ export function useElementIntersect(observerOptions: ElementIntersectOptions, ca
 		if (!targetElement) {
 			return;
 		}
+		const effectRootElement = rootElement || rootRef?.current || null;
 		let isCleanedUp = false;
-		const rootElement = rootRef ? (rootRef.current || null) : null;
 
 		function onChange(entry: IntersectionObserverEntry) {
 			if (!isCleanedUp) {
@@ -79,7 +83,7 @@ export function useElementIntersect(observerOptions: ElementIntersectOptions, ca
 		}
 
 		const observer = createElementIntersectObserver({
-			root: rootElement,
+			root: effectRootElement,
 			rootMargin: rootMargin,
 			threshold: threshold
 		});
@@ -89,7 +93,7 @@ export function useElementIntersect(observerOptions: ElementIntersectOptions, ca
 			observer.unobserve(targetElement);
 			isCleanedUp = true;
 		};
-	}, [rootMargin, threshold]);
+	}, [rootMargin, threshold, rootElement]);
 
 	return targetElementRef;
 };

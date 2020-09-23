@@ -35,6 +35,16 @@ export interface StickyInput {
 	 */
 	offsetPixels: number;
 	/**
+	 * Default: undefined.
+	 * If set, uses the element as the root of the intersection instead of the window viewport.
+	 */
+	rootRef: React.RefObject<any | null> | undefined;
+	/**
+	 * Default: undefined.
+	 * If set, uses the element as the root of the intersection instead of the window viewport.
+	 */
+	rootElement: HTMLElement | null | undefined;
+	/**
 	 * Default: 0. [0,Infinity)
 	 * Factor is relative to the height of the child content.
 	 * 0 is the start of the child content; .5 is half its height; 1 is its full height.
@@ -67,6 +77,8 @@ const defaultStickyInput: StickyInput = {
 	// See comments above
 	direction: 'top',
 	offsetPixels: 0,
+	rootRef: undefined,
+	rootElement: undefined,
 	firstFactor: 0,
 	firstPixels: 0,
 	secondFactor: 0,
@@ -77,14 +89,15 @@ const defaultStickyInput: StickyInput = {
 
 export interface StickyOutput {
 	input: StickyInput;
-	rootRef: React.RefObject<any>;
 	isAtFirst: boolean;
 	isAtSecond: boolean;
 
 	// "Private"
-	firstTargetRef: React.RefObject<any>;
-	secondTargetRef: React.RefObject<any>;
-	relativeContentSizeRef: React.RefObject<any>;
+	internal: {
+		firstTargetRef: React.RefObject<any>;
+		secondTargetRef: React.RefObject<any>;
+		relativeContentSizeRef: React.RefObject<any>;
+	};
 }
 
 // Default threshold that just triggers on full intersect and first intersect.
@@ -92,7 +105,11 @@ const defaultThreshold = createThreshold();
 
 export function useSticky(input: Partial<StickyInput>): StickyOutput {
 	const safeInput = Object.assign({}, defaultStickyInput, input);
-	const { direction, offsetPixels, firstFactor, firstPixels, secondFactor, secondPixels, throttle } = safeInput;
+	const { direction, offsetPixels, firstFactor, firstPixels, secondFactor, secondPixels, throttle, rootRef, rootElement } = safeInput;
+
+	// Although we set up safe inputs, we still should check about whether the user wanted to use the second threshold.
+	// If they didn't (by not setting it), we would potentially hit the second before the first (which was set), and it messes up their expectations.
+	const shouldUseSecondThreshold = input.secondFactor !== undefined || input.secondPixels !== undefined;
 
 	const isTop = direction.toLowerCase() === 'top';
 
@@ -117,12 +134,11 @@ export function useSticky(input: Partial<StickyInput>): StickyOutput {
 		setRelativeContentHeight(height);
 	});
 
-	// If not set, we use the window.
-	const rootRef = React.useRef<any>(null);
-
+	const firstRootMargin = calculateRootMargin(isTop, offsetPixels, relativeContentHeight, firstFactor, firstPixels);
 	const firstTargetRef = useElementIntersect({
 		rootRef: rootRef,
-		rootMargin: calculateRootMargin(isTop, offsetPixels, relativeContentHeight, firstFactor, firstPixels),
+		rootElement: rootElement,
+		rootMargin: firstRootMargin,
 		threshold: defaultThreshold
 	}, (intersect) => {
 		if (!intersect || isCleanedUpRef.current) {
@@ -136,9 +152,12 @@ export function useSticky(input: Partial<StickyInput>): StickyOutput {
 		setIsAtFirst(isTop ? intersect.top.isBefore : intersect.bottom.isAfter);
 	});
 
+	// See above notes - if no second threshold was passed, make it at least equal to the first so that our "safety measure" below still works.
+	const secondRootMargin = shouldUseSecondThreshold ? calculateRootMargin(isTop, offsetPixels, relativeContentHeight, secondFactor, secondPixels) : firstRootMargin;
 	const secondTargetRef = useElementIntersect({
 		rootRef: rootRef,
-		rootMargin: calculateRootMargin(isTop, offsetPixels, relativeContentHeight, secondFactor, secondPixels),
+		rootElement: rootElement,
+		rootMargin: secondRootMargin,
 		threshold: defaultThreshold
 	}, (intersect) => {
 		if (!intersect || isCleanedUpRef.current) {
@@ -149,13 +168,14 @@ export function useSticky(input: Partial<StickyInput>): StickyOutput {
 
 	return {
 		input: safeInput,
-		rootRef: rootRef,
 		isAtFirst: isAtFirst || isAtSecond, // Safety measure
 		isAtSecond: isAtSecond,
 
-		firstTargetRef: firstTargetRef,
-		secondTargetRef: secondTargetRef,
-		relativeContentSizeRef: relativeContentSizeRef,
+		internal: {
+			firstTargetRef: firstTargetRef,
+			secondTargetRef: secondTargetRef,
+			relativeContentSizeRef: relativeContentSizeRef
+		}
 	};
 }
 
@@ -197,7 +217,8 @@ export interface StickyProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const Sticky: React.FC<StickyProps> = (props) => {
 	const { output, variableContent, isSticky, children, zIndex } = props;
-	const { input, relativeContentSizeRef, firstTargetRef, secondTargetRef } = output;
+	const { input, internal } = output;
+	const { relativeContentSizeRef, firstTargetRef, secondTargetRef } = internal;
 	const { direction, offsetPixels } = input;
 
 	const isTop = direction === 'top';

@@ -3,6 +3,7 @@ import styled, { StyledComponent } from 'styled-components';
 
 export interface FlexProps extends React.HTMLAttributes<HTMLDivElement> {
 	flex?: number | string;
+	order?: number;
 }
 
 /*
@@ -21,10 +22,16 @@ export interface FlexProps extends React.HTMLAttributes<HTMLDivElement> {
 	Solution: use the recommended approach, even if just to get the warning out of the way.	
 */
 export const Flex = styled.div.attrs((p: FlexProps) => {
+	const style: Partial<CSSStyleDeclaration> = {};
+
+	if (p.flex) {
+		style.flex = p.flex.toString();
+	}
+	if (p.order) {
+		style.order = p.order.toString();
+	}
 	return {
-		style: {
-			flex: p.flex!
-		}
+		style: style
 	};
 })`
 	position: relative;
@@ -50,10 +57,15 @@ interface FlexParentProps extends FlexProps {
 	 * Default: flex-start
 	 * */
 	justifyContent?: 'flex-start' | 'flex-end' | 'center' | 'space-between' | 'space-around' | 'space-evenly';
+	/**
+	 * If true, uses display: inline-flex.
+	 * Default: false
+	 */
+	isInline?: boolean;
 }
 
 export const FlexParent = styled(Flex) <FlexParentProps>`
-	display: flex;
+	display: ${p => p.isInline ? 'inline-flex' : 'flex'};
 	flex-direction: ${p => p.flexDirection};
 	align-items: ${p => p.alignItems};
 	justify-content: ${p => p.justifyContent};

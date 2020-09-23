@@ -109,3 +109,22 @@ export function useRefEffectCallback<T extends HTMLElement>(effect: RefEffectCal
 
 	return callback;
 }
+
+/**
+ * A simple extension to useRefLayoutEffect that stores the DOM object in state.
+ * Useful for cases where the DOM element needs to be treated almost like data instead of like the DOM.
+ * That case doesn't happen very often, though.
+ */
+export function useStateDOM<T extends HTMLElement>(): [React.RefObject<T | any>, T | null] {
+
+	const [element, setElement] = React.useState<T | null>(null);
+
+	const ref = useRefLayoutEffect((element) => {
+		setElement(element as unknown as T);
+		return () => {
+			setElement(null);
+		};
+	});
+
+	return [ref, element];
+}
