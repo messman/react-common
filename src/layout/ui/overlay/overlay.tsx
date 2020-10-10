@@ -3,14 +3,15 @@ import { FlexRoot } from '../flex/flex';
 import styled from 'styled-components';
 
 export interface OverlayProps {
-	isActive: boolean,
-	component: JSX.Element | null,
-	backdropOpacity?: number,
+	isActive: boolean;
+	component: JSX.Element | null;
+	backdropOpacity?: number;
 	backdropColor: string;
+	onBackdropClick?: (() => void) | null;
 }
 
 export const Overlay: React.FC<OverlayProps> = (props) => {
-	const { isActive, component, backdropOpacity, backdropColor } = props;
+	const { isActive, component, backdropOpacity, backdropColor, onBackdropClick } = props;
 
 	const backdropProps: OverlayAbsoluteBackdropProps = {
 		isActive: isActive,
@@ -18,10 +19,12 @@ export const Overlay: React.FC<OverlayProps> = (props) => {
 		backdropOpacity: backdropOpacity || 1
 	};
 
+	const onClick = onBackdropClick || undefined;
+
 	return (
 		<>
 			{props.children}
-			<OverlayAbsoluteBackdrop {...backdropProps} />
+			<OverlayAbsoluteBackdrop onClick={onClick} {...backdropProps} />
 			<OverlayAbsoluteComponentContainer isActive={isActive}>
 				{component}
 			</OverlayAbsoluteComponentContainer>
@@ -30,9 +33,9 @@ export const Overlay: React.FC<OverlayProps> = (props) => {
 };
 
 interface OverlayAbsoluteBackdropProps {
-	isActive: boolean,
-	backgroundColor: string,
-	backdropOpacity: number,
+	isActive: boolean;
+	backgroundColor: string;
+	backdropOpacity: number;
 }
 
 const OverlayAbsoluteBackdrop = styled.div<OverlayAbsoluteBackdropProps>`
@@ -55,4 +58,6 @@ const OverlayAbsoluteComponentContainer = styled(FlexRoot) <OverlayAbsoluteCompo
 	position: absolute;
 	top: 0;
 	left: 0;
+	width: 100%;
+	height: 100%;
 `;

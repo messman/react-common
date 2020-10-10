@@ -27,6 +27,8 @@ export function createThreshold(sections?: number): number[] {
 	return thresholds;
 }
 
+const defaultThreshold = createThreshold();
+
 export interface ElementIntersectOptions extends Pick<IntersectionObserverInit, 'rootMargin' | 'threshold'> {
 	/**
 	 * The root element should be an ancestor of the target element. However, if the root is in a parent *component*, then this ref won't yet be set.
@@ -85,7 +87,7 @@ export function useElementIntersect(observerOptions: ElementIntersectOptions, ca
 		const observer = createElementIntersectObserver({
 			root: effectRootElement,
 			rootMargin: rootMargin,
-			threshold: threshold
+			threshold: threshold || defaultThreshold
 		});
 		observer.observe(targetElement, onChange);
 
