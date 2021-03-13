@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { themes, LocalStorageThemeProvider, useLocalStorageThemeProvider } from './theme';
-import { select, withKnobs, boolean } from '@storybook/addon-knobs';
+import { select, boolean } from '@storybook/addon-knobs';
 import { DocumentVisibilityProvider } from '@/lifecycle/visibility/visibility';
 import { WindowDimensionsProvider } from '@/layout/services/window-layout/window-dimensions';
 import { defaultLowerBreakpoints } from '@/layout/services/window-layout/window-layout';
@@ -8,10 +8,8 @@ import { WindowPixelLayoutProvider } from '@/layout/services/window-layout/windo
 
 export interface StoryComponent {
 	(): JSX.Element;
-	story?: {
-		name?: string;
-		decorators?: any[];
-	};
+	storyName?: string;
+	decorators?: any[];
 }
 
 export function decorate(name: string, Component: React.FC, excludeProviders?: boolean) {
@@ -44,10 +42,8 @@ export function decorate(name: string, Component: React.FC, excludeProviders?: b
 	};
 
 	const storyComponent = story as StoryComponent;
-	storyComponent.story = {
-		name: name,
-		decorators: [decorator, withKnobs]
-	};
+	storyComponent.storyName = name;
+	storyComponent.decorators = [decorator];
 	return storyComponent;
 };
 
