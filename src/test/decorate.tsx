@@ -3,7 +3,8 @@ import { themes, LocalStorageThemeProvider, useLocalStorageThemeProvider } from 
 import { select, withKnobs, boolean } from '@storybook/addon-knobs';
 import { DocumentVisibilityProvider } from '@/lifecycle/visibility/visibility';
 import { WindowDimensionsProvider } from '@/layout/services/window-layout/window-dimensions';
-import { WindowLayoutProvider, defaultLowerBreakpoints } from '@/layout/services/window-layout/window-layout';
+import { defaultLowerBreakpoints } from '@/layout/services/window-layout/window-layout';
+import { WindowPixelLayoutProvider } from '@/layout/services/window-layout/window-layout-pixel';
 
 export interface StoryComponent {
 	(): JSX.Element;
@@ -13,7 +14,7 @@ export interface StoryComponent {
 	};
 }
 
-export function decorate(name: string, Component: React.FC) {
+export function decorate(name: string, Component: React.FC, excludeProviders?: boolean) {
 
 	/*
 		Some funky stuff is required here.
@@ -36,7 +37,7 @@ export function decorate(name: string, Component: React.FC) {
 
 	const decorator = (story: () => JSX.Element) => {
 		return (
-			<Wrapper>
+			<Wrapper excludeProviders={!!excludeProviders}>
 				{story()}
 			</Wrapper>
 		);
@@ -50,7 +51,11 @@ export function decorate(name: string, Component: React.FC) {
 	return storyComponent;
 };
 
-const Wrapper: React.FC = (props) => {
+interface WrapperProps {
+	excludeProviders: boolean;
+}
+
+const Wrapper: React.FC<WrapperProps> = (props) => {
 
 	const themeOptions: { [key: string]: number; } = {};
 	themes.forEach((theme, index) => {
@@ -68,13 +73,21 @@ const Wrapper: React.FC = (props) => {
 
 	const forceHidden = boolean('Force Hidden', false, 'Global');
 
+	if (props.excludeProviders) {
+		return (
+			<LocalStorageThemeProvider value={localStorageThemeProvider}>
+				{props.children}
+			</LocalStorageThemeProvider>
+		);
+	}
+
 	return (
 		<DocumentVisibilityProvider testForceHidden={forceHidden}>
 			<LocalStorageThemeProvider value={localStorageThemeProvider}>
 				<WindowDimensionsProvider>
-					<WindowLayoutProvider lowerBreakpoints={defaultLowerBreakpoints}>
+					<WindowPixelLayoutProvider lowerBreakpoints={defaultLowerBreakpoints}>
 						{props.children}
-					</WindowLayoutProvider>
+					</WindowPixelLayoutProvider>
 				</WindowDimensionsProvider>
 			</LocalStorageThemeProvider>
 		</DocumentVisibilityProvider>

@@ -40,13 +40,13 @@ export const WindowDimensionsProvider: React.FC = (props: React.ComponentProps<a
 			checkDimensions();
 		}
 		if (resizeMQL.current) {
-			resizeMQL.current.addListener(handleChange);
+			resizeMQL.current.addEventListener('change', handleChange);
 		}
 		window.addEventListener('resize', handleChange);
 		window.addEventListener('visibilitychange', handleChange);
 		return function () {
 			if (resizeMQL.current) {
-				resizeMQL.current.removeListener(handleChange);
+				resizeMQL.current.removeEventListener('change', handleChange);
 			}
 			window.removeEventListener('resize', handleChange);
 			window.removeEventListener('visibilitychange', handleChange);

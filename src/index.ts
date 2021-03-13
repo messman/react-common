@@ -13,7 +13,9 @@ export { useElementIntersect, useControlledElementIntersect, ElementIntersect, E
 export { ElementScroll, useElementScroll } from './layout/services/element-scroll/element-scroll';
 export { ElementSize, useElementSize, ResizeObserverEntry, createElementSizeObserver, useControlledElementSize, getGlobalElementSizeObserver } from './layout/services/element-size/element-size';
 export { WindowDimensions, WindowDimensionsProvider, useWindowDimensions } from './layout/services/window-layout/window-dimensions';
-export { DefaultLayoutBreakpoint, LayoutOrientation, WindowLayout, WindowLayoutProvider, WindowLayoutProviderProps, useWindowLayout, defaultLowerBreakpoints } from './layout/services/window-layout/window-layout';
+export { DefaultLayoutBreakpoint, LayoutOrientation, WindowLayout, defaultLowerBreakpoints } from './layout/services/window-layout/window-layout';
+export { WindowPixelLayoutProvider, WindowPixelLayoutProviderProps, useWindowPixelLayout } from './layout/services/window-layout/window-layout-pixel';
+export { WindowMediaLayoutProvider, WindowMediaLayoutProviderProps, useWindowMediaLayout } from './layout/services/window-layout/window-layout-media';
 export { Flex, FlexColumn, FlexParent, FlexProps, FlexRoot, FlexRow } from './layout/ui/flex/flex';
 export { Overlay, OverlayProps } from './layout/ui/overlay/overlay';
 export { Sticky, StickyInput, StickyOutput, StickyProps, useSticky } from './layout/ui/sticky/sticky';
