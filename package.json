@@ -1,6 +1,6 @@
 {
 	"name": "@messman/react-common",
-	"version": "1.4.1",
+	"version": "2.0.0",
 	"description": "Common React utilities for use in projects.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -27,26 +27,26 @@
 	},
 	"homepage": "https://github.com/messman/react-common#readme",
 	"peerDependencies": {
-		"react": "^16.13.1",
-		"react-dom": "^16.13.1",
-		"styled-components": "^5.1.1"
+		"react": "^17.0.1",
+		"react-dom": "^17.0.1",
+		"styled-components": "^5.2.1"
 	},
 	"devDependencies": {
-		"@babel/core": "^7.11.6",
-		"@babel/preset-env": "^7.11.5",
-		"@babel/preset-react": "^7.10.4",
-		"@messman/ts-webpack-builder": "^1.5.2",
+		"@babel/core": "^7.13.10",
+		"@babel/preset-env": "^7.13.10",
+		"@babel/preset-react": "^7.12.13",
+		"@messman/ts-webpack-builder": "^2.0.0",
 		"@storybook/addon-knobs": "^5.3.21",
 		"@storybook/addon-viewport": "^5.3.21",
 		"@storybook/react": "^5.3.21",
-		"@types/react": "^16.9.51",
-		"@types/react-dom": "^16.9.8",
-		"@types/styled-components": "^5.1.4",
-		"babel-loader": "^8.1.0",
-		"react": "^16.13.1",
-		"react-dom": "^16.13.1",
-		"styled-components": "^5.2.0",
-		"typescript": "^3.9.7",
+		"@types/react": "^17.0.3",
+		"@types/react-dom": "^17.0.2",
+		"@types/styled-components": "^5.1.8",
+		"babel-loader": "^8.2.2",
+		"react": "^17.0.1",
+		"react-dom": "^17.0.1",
+		"styled-components": "^5.2.1",
+		"typescript": "^4.2.3",
 		"typescript-plugin-styled-components": "^1.4.4"
 	}
 }
