@@ -49,7 +49,6 @@ export const WindowMediaLayoutProvider: React.FC<WindowMediaLayoutProviderProps>
 			});
 		}
 
-		console.log('Add listeners');
 		resizeQuery.current.addEventListener('change', handleChange);
 		queries.current.forEach((query) => {
 			const [width, height] = query;
