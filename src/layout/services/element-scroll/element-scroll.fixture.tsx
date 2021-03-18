@@ -1,23 +1,21 @@
 import * as React from 'react';
-import { decorate } from '@/test/decorate';
 import { styled } from '@/test/styled';
-import { number } from '@storybook/addon-knobs';
 import { Flex, FlexRoot } from '@/layout/ui/flex/flex';
 import { useElementScroll, ElementScroll } from './element-scroll';
 import { usePrevious } from '@/utility/previous/previous';
+import { useValue } from 'react-cosmos/fixture';
+import { TestWrapper } from '@/test/decorate';
 
-export default { title: 'Layout/Services/Element Scroll' };
+export default () => {
 
-export const TestElementScroll = decorate('Element Scroll', () => {
-
-	const throttle = number('Throttle', 0);
-	const heightFactor = number('Height Factor', 3);
+	const [throttle] = useValue('Throttle', { defaultValue: 0 });
+	const [heightFactor] = useValue('Height Factor', { defaultValue: 3 });
 
 	const [ref, elementScroll] = useElementScroll(throttle);
 	const previousElementScroll = usePrevious(elementScroll);
 
 	return (
-		<>
+		<TestWrapper>
 			<FlexRoot flexDirection='column'>
 				<p><strong>{getElementScrollStatus(elementScroll)}</strong></p>
 				<p><em>Previous: {getElementScrollStatus(previousElementScroll || null)}</em></p>
@@ -30,9 +28,9 @@ export const TestElementScroll = decorate('Element Scroll', () => {
 					</Scroller>
 				</FlexContainer>
 			</FlexRoot>
-		</>
+		</TestWrapper>
 	);
-});
+};
 
 function getElementScrollStatus(elementScroll: ElementScroll | null): string {
 	if (!elementScroll) {

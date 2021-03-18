@@ -1,10 +1,16 @@
 import * as React from 'react';
-import { decorate } from '@/test/decorate';
+import { TestWrapper } from '@/test/decorate';
 import { useDocumentVisibility } from './visibility';
 
-export default { title: 'Lifecycle/Visibility' };
+export default () => {
+	return (
+		<TestWrapper>
+			<TestVisibility />
+		</TestWrapper>
+	);
+};
 
-export const TestVisibility = decorate('Visibility', () => {
+const TestVisibility: React.FC = () => {
 
 	const documentVisibility = useDocumentVisibility();
 
@@ -17,7 +23,7 @@ export const TestVisibility = decorate('Visibility', () => {
 	}, [documentVisibility]);
 
 	const historyItems = history.map((item, i) => {
-		const text = item ? 'Hidden' : 'Visible';
+		const text = item ? 'Visible' : 'Hidden';
 
 		return (
 			<p key={i}>{text}</p>
@@ -27,4 +33,4 @@ export const TestVisibility = decorate('Visibility', () => {
 	return (
 		<>{historyItems}</>
 	);
-});
+};
