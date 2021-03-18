@@ -1,57 +1,39 @@
 import * as React from 'react';
+import { decorate } from '@/test/decorate';
 import { DefaultLayoutBreakpoint, defaultLowerBreakpoints, LayoutOrientation } from './window-layout';
-import { useWindowDimensions, WindowDimensionsProvider } from './window-dimensions';
+import { useWindowDimensions } from './window-dimensions';
 import { useWindowMediaLayout, WindowMediaLayoutProvider } from './window-layout-media';
-import { useWindowPixelLayout, WindowPixelLayoutProvider } from './window-layout-pixel';
-import { TestWrapper } from '@/test/decorate';
+import { useWindowPixelLayout } from './window-layout-pixel';
 
-export default {
-	'Window Pixel Layout': () => {
+export default { title: 'Layout/Services/Window Layout' };
 
-		//const windowDimensions = useWindowDimensions();
-		const windowLayout = useWindowPixelLayout();
-		let invalidText: JSX.Element | null = null;
-		if (windowLayout.heightBreakpoint < DefaultLayoutBreakpoint.regular) {
-			invalidText = <p>Invalid Layout</p>;
-		}
+export const TestWindowPixelLayout = decorate('Window Pixel Layout', () => {
 
-		return (
-			<TestWrapper>
-				<WindowDimensionsProvider>
-					<WindowPixelLayoutProvider lowerBreakpoints={defaultLowerBreakpoints}>
-						<p>{LayoutOrientation[windowLayout.orientation]}</p>
-						<p>width - {DefaultLayoutBreakpoint[windowLayout.widthBreakpoint]} ({windowLayout.widthBreakpoint})</p>
-						<p>height - {DefaultLayoutBreakpoint[windowLayout.heightBreakpoint]} ({windowLayout.heightBreakpoint})</p>
-						{invalidText}
-					</WindowPixelLayoutProvider>
-				</WindowDimensionsProvider>
-			</TestWrapper>
-		);
-	},
-	'Window Media Layout': () => {
-
-		return (
-			<TestWrapper>
-				<WindowMediaLayoutProvider lowerBreakpoints={defaultLowerBreakpoints} breakpointUnit='px'>
-					<InnerWindowMediaLayoutTest />
-				</WindowMediaLayoutProvider>
-			</TestWrapper>
-		);
-	},
-	'Both Layouts': () => {
-		return (
-			<TestWrapper>
-				<WindowMediaLayoutProvider lowerBreakpoints={defaultLowerBreakpoints} breakpointUnit='px'>
-					<WindowDimensionsProvider>
-						<WindowPixelLayoutProvider lowerBreakpoints={defaultLowerBreakpoints}>
-							<InnerWindowLayoutsTest />
-						</WindowPixelLayoutProvider>
-					</WindowDimensionsProvider>
-				</WindowMediaLayoutProvider>
-			</TestWrapper>
-		);
+	//const windowDimensions = useWindowDimensions();
+	const windowLayout = useWindowPixelLayout();
+	let invalidText: JSX.Element | null = null;
+	if (windowLayout.heightBreakpoint < DefaultLayoutBreakpoint.regular) {
+		invalidText = <p>Invalid Layout</p>;
 	}
-};
+
+	return (
+		<>
+			<p>{LayoutOrientation[windowLayout.orientation]}</p>
+			<p>width - {DefaultLayoutBreakpoint[windowLayout.widthBreakpoint]} ({windowLayout.widthBreakpoint})</p>
+			<p>height - {DefaultLayoutBreakpoint[windowLayout.heightBreakpoint]} ({windowLayout.heightBreakpoint})</p>
+			{invalidText}
+		</>
+	);
+});
+
+export const TestWindowMediaLayout = decorate('Window Media Layout', () => {
+
+	return (
+		<WindowMediaLayoutProvider lowerBreakpoints={defaultLowerBreakpoints} breakpointUnit='px'>
+			<InnerWindowMediaLayoutTest />
+		</WindowMediaLayoutProvider>
+	);
+}, true);
 
 const InnerWindowMediaLayoutTest: React.FC = () => {
 	const windowLayout = useWindowMediaLayout();
@@ -69,6 +51,14 @@ const InnerWindowMediaLayoutTest: React.FC = () => {
 		</>
 	);
 };
+
+export const TestWindowLayouts = decorate('Both Layouts', () => {
+	return (
+		<WindowMediaLayoutProvider lowerBreakpoints={defaultLowerBreakpoints} breakpointUnit='px'>
+			<InnerWindowLayoutsTest />
+		</WindowMediaLayoutProvider>
+	);
+});
 
 const InnerWindowLayoutsTest: React.FC = () => {
 	const windowDimensions = useWindowDimensions();

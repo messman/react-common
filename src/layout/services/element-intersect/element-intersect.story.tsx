@@ -1,16 +1,18 @@
 import * as React from 'react';
+import { decorate } from '@/test/decorate';
 import { styled } from '@/test/styled';
+import { number, text, boolean } from '@storybook/addon-knobs';
 import { Flex, FlexRoot } from '@/layout/ui/flex/flex';
 import { useControlledElementIntersect, ElementIntersect, createThreshold, ElementIntersectOptions, ElementIntersectRelativePosition } from './element-intersect';
 import { usePrevious } from '@/utility/previous/previous';
-import { useValue } from 'react-cosmos/fixture';
-import { TestWrapper } from '@/test/decorate';
 
-export default () => {
+export default { title: 'Layout/Services/Element Intersect' };
 
-	const [rootMargin] = useValue('Root Margin', { defaultValue: '0%' });
-	const [thresholdSections] = useValue('Threshold Sections', { defaultValue: 0 });
-	const [useRootElement] = useValue('Use Root Element', { defaultValue: true });
+export const TestElementIntersect = decorate('Element Intersect', () => {
+
+	const rootMargin = text('Root Margin', '0%');
+	const thresholdSections = number('Threshold Sections', 0, { min: 1, max: 20, step: 2 });
+	const useRootElement = boolean('Use Root Element', true);
 
 	const threshold = React.useMemo(() => {
 		return createThreshold(thresholdSections);
@@ -24,15 +26,14 @@ export default () => {
 			threshold: threshold
 		};
 	}, [rootMargin, threshold, useRootElement]);
-	console.log('Options', intersectOptions);
 
 	const [targetRef, elementIntersect] = useControlledElementIntersect(intersectOptions, (_) => {
-		console.log('Intersect', elementIntersect);
+		//console.log('Intersect', elementIntersect);
 	});
 	const previousElementIntersect = usePrevious(elementIntersect);
 
 	return (
-		<TestWrapper>
+		<>
 			<FlexRoot flexDirection='column'>
 				<p>{JSON.stringify(threshold)}</p>
 				<ElementIntersectStatus intersect={elementIntersect} />
@@ -48,9 +49,9 @@ export default () => {
 					</Scroller>
 				</FlexContainer>
 			</FlexRoot>
-		</TestWrapper>
+		</>
 	);
-};
+});
 
 interface ElementIntersectStatusProps {
 	intersect: ElementIntersect | null | undefined;
@@ -103,7 +104,7 @@ const Scroller = styled.div`
 	display: flex;
 	flex-direction: column;
 	width: 100%;
-	height: 1800px;
+	height: 300%;
 	background: rgb(6,169,203);
 	background: linear-gradient(180deg, rgba(6,169,203,1) 0%, rgba(9,9,121,1) 100%);
 `;

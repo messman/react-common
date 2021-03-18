@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { decorate } from '@/test/decorate';
+import { number, select, boolean } from '@storybook/addon-knobs';
 import { useTruthyTimer, getDebugTruthyTimerStatus } from '@/lifecycle/timer/timer';
 import { createContextConsumer } from '@/utility/context/context';
 import { FlexRoot, FlexRow, FlexColumn } from '@/layout/ui/flex/flex';
@@ -7,8 +9,6 @@ import { clampPromise, getDebugPromiseStatus } from '@/data/promise/promise';
 import { useDocumentVisibility } from '@/lifecycle/visibility/visibility';
 import { seconds } from '@/utility/time/time';
 import { StalePromiseTimerOutput, useStalePromiseTimer, StalePromiseTimerComponent } from './stale-promise-timer';
-import { useValue, useSelect } from 'react-cosmos/fixture';
-import { wrap } from '@/test/decorate';
 
 /*
 	Goal of this test:
@@ -22,6 +22,8 @@ import { wrap } from '@/test/decorate';
 	+ Promise A is like the 'new version available' toast message that can appear at the bottom, executing immediately after the timer expires.
 	+ Promise B and C can each be to trigger the 'UPDATE' button - meaning, they won't run their promise until the button is clicked. Then their promise runs, then the timer starts on success or failure.
 */
+
+export default { title: 'Composite/Page Refresh' };
 
 const [HomePromiseTimerProvider, homePromiseTimerConsumer] = createContextConsumer<StalePromiseTimerOutput<string[]>>();
 const [PopularPromiseTimerProvider, popularPromiseTimerConsumer] = createContextConsumer<StalePromiseTimerOutput<string[]>>();
@@ -55,14 +57,14 @@ const promiseFunc = () => {
 	}), requestMin, null);
 };
 
-export default wrap(() => {
+export const TestPageRefresh = decorate('Page Refresh', () => {
 
-	const [showPageManager] = useValue('Show Pages', { defaultValue: false });
-	const [useRefreshButtonOnPages] = useValue('Pages Show A Refresh Button', { defaultValue: false });
-	const [activePageName] = useSelect('Active', { options: Object.keys(pages) });
-	const [updateTimeout] = useValue('Update Timer Expiration', { defaultValue: 14 });
-	const [homeTimeout] = useValue('Home Timer Expiration', { defaultValue: 8 });
-	const [popularTimeout] = useValue('Popular Timer Expiration', { defaultValue: 8 });
+	const showPageManager = boolean('Show Pages', false);
+	const useRefreshButtonOnPages = boolean('Pages Show A Refresh Button', false);
+	const activePageIndex = select('Active', pages, pages.home);
+	const updateTimeout = seconds(number('Update Timer Expiration', 14));
+	const homeTimeout = seconds(number('Home Timer Expiration', 8));
+	const popularTimeout = seconds(number('Popular Timer Expiration', 8));
 
 	const [updateTimerIsCompleted, setUpdateTimerIsCompleted] = React.useState(false);
 
@@ -70,7 +72,7 @@ export default wrap(() => {
 
 	const updateTimer = useTruthyTimer({
 		isStarted: true,
-		timeout: seconds(updateTimeout)
+		timeout: updateTimeout
 	}, documentVisibility, () => {
 		console.log('update timer completed');
 		setUpdateTimerIsCompleted(true);
@@ -78,7 +80,7 @@ export default wrap(() => {
 
 	const homePromiseTimer = useStalePromiseTimer({
 		initialAction: StalePromiseTimerComponent.none,
-		timerTimeout: seconds(homeTimeout),
+		timerTimeout: homeTimeout,
 		isTimerTruthy: documentVisibility,
 		timerCallback: () => {
 			console.log('home timer completed');
@@ -91,7 +93,7 @@ export default wrap(() => {
 
 	const popularPromiseTimer = useStalePromiseTimer({
 		initialAction: StalePromiseTimerComponent.none,
-		timerTimeout: seconds(popularTimeout),
+		timerTimeout: popularTimeout,
 		isTimerTruthy: documentVisibility,
 		timerCallback: () => {
 			console.log('popular timer completed');
@@ -104,7 +106,7 @@ export default wrap(() => {
 
 	let content: JSX.Element = null!;
 	if (showPageManager) {
-		content = <PageManager activeIndex={pages[activePageName as keyof typeof pages]} />;
+		content = <PageManager activeIndex={activePageIndex} />;
 	}
 	else {
 		content = <OtherView timerStatus={getDebugTruthyTimerStatus(updateTimer)} />;
