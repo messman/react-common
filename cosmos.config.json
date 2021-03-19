@@ -1,4 +1,7 @@
 {
+	"watchDirs": [
+		"./src"
+	],
 	"webpack": {
 		"configPath": "./cosmos.webpack.config.js"
 	},
