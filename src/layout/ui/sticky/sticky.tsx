@@ -287,7 +287,7 @@ const StickyContainer = styled.div.attrs<StickyContainerProps>((p) => {
 			style.justifyContent = 'flex-end';
 		}
 	}
-	if (Number.isFinite(zIndex)) {
+	if (zIndex !== undefined && Number.isFinite(zIndex)) {
 		style.zIndex = zIndex!.toString();
 	}
 	return {

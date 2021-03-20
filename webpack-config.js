@@ -3,16 +3,19 @@ const createStyledComponentsTransformer = require('typescript-plugin-styled-comp
 
 /**
  * @param {any} webpackConfig
- * @param {boolean} isDevelopment
- * @param {boolean} isStorybook
+ * @param {boolean} isCosmos
  * */
-module.exports = function updateWebpackConfig(webpackConfig, isDevelopment, isStorybook) {
+module.exports = function updateWebpackConfig(webpackConfig, isCosmos) {
 
-	// Storybook 6 recommends not changing the Typescript/Babel config.
-	// I guess that's okay, since there's nothing absolutely required in our custom config.
-	if (isStorybook) {
-		return;
-	}
+	// In Cosmos, we don't need source maps or declarations.
+	const compilerOptions = isCosmos ? ({
+		sourceMap: true,
+		declaration: false,
+		declarationMap: false,
+		skipLibCheck: true,
+		incremental: false
+	}) : undefined;
+
 
 	// ts-loader is present by default in ts-webpack-builder, but here we want to change some properties.
 	// So, overwrite the rules array.
@@ -34,8 +37,9 @@ module.exports = function updateWebpackConfig(webpackConfig, isDevelopment, isSt
 					loader: 'ts-loader',
 					options: {
 						getCustomTransformers: () => ({ before: [createStyledComponentsTransformer()] }),
-						onlyCompileBundledFiles: true,
-						//transpileOnly: true,
+						onlyCompileBundledFiles: false, // Keep the default of false, or build time will double.
+						transpileOnly: false, // Set to true to test speed without type-checking.
+						compilerOptions: compilerOptions
 					}
 				}
 			]
