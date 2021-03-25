@@ -49,19 +49,19 @@ export const WindowMediaLayoutProvider: React.FC<WindowMediaLayoutProviderProps>
 			});
 		}
 
-		resizeQuery.current.addEventListener('change', handleChange);
+		addMediaEventListener(resizeQuery.current, handleChange);
 		queries.current.forEach((query) => {
 			const [width, height] = query;
-			width.addEventListener('change', handleChange);
-			height.addEventListener('change', handleChange);
+			addMediaEventListener(width, handleChange);
+			addMediaEventListener(height, handleChange);
 		});
 
 		return function () {
-			resizeQuery.current.removeEventListener('change', handleChange);
+			removeMediaEventListener(resizeQuery.current, handleChange);
 			queries.current.forEach((query) => {
 				const [width, height] = query;
-				width.removeEventListener('change', handleChange);
-				height.removeEventListener('change', handleChange);
+				removeMediaEventListener(width, handleChange);
+				removeMediaEventListener(height, handleChange);
 			});
 		};
 	}, [lowerBreakpoints]);
@@ -99,4 +99,34 @@ function runQueries(lowerBreakpoints: number[], queries: MediaQueryListTuple[], 
 		}
 	}
 	return newLayout;
+}
+
+/**
+ * Add an event listener to the MediaQueryList.
+ * Safari doesn't yet support the addEventLister/removeEventListener API (as of March 2021).
+ * 
+ * https://caniuse.com/mdn-api_mediaquerylist
+ */
+export function addMediaEventListener(mediaQueryList: MediaQueryList, handler: () => void): void {
+	if (!!mediaQueryList.addEventListener) {
+		mediaQueryList.addEventListener('change', handler);
+	}
+	else {
+		mediaQueryList.addListener(handler);
+	}
+}
+
+/**
+ * Remove an event listener from the MediaQueryList.
+ * Safari doesn't yet support the addEventLister/removeEventListener API (as of March 2021).
+ * 
+ * https://caniuse.com/mdn-api_mediaquerylist
+ */
+export function removeMediaEventListener(mediaQueryList: MediaQueryList, handler: () => void): void {
+	if (!!mediaQueryList.removeEventListener) {
+		mediaQueryList.removeEventListener('change', handler);
+	}
+	else {
+		mediaQueryList.removeListener(handler);
+	}
 }

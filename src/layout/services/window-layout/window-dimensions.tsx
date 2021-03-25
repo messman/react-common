@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { addMediaEventListener, removeMediaEventListener } from './window-layout-media';
 
 export interface WindowDimensions {
 	width: number;
@@ -40,13 +41,13 @@ export const WindowDimensionsProvider: React.FC = (props: React.ComponentProps<a
 			checkDimensions();
 		}
 		if (resizeMQL.current) {
-			resizeMQL.current.addEventListener('change', handleChange);
+			addMediaEventListener(resizeMQL.current, handleChange);
 		}
 		window.addEventListener('resize', handleChange);
 		window.addEventListener('visibilitychange', handleChange);
 		return function () {
 			if (resizeMQL.current) {
-				resizeMQL.current.removeEventListener('change', handleChange);
+				removeMediaEventListener(resizeMQL.current, handleChange);
 			}
 			window.removeEventListener('resize', handleChange);
 			window.removeEventListener('visibilitychange', handleChange);
