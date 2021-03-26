@@ -89,11 +89,11 @@ export function useElementIntersect(observerOptions: ElementIntersectOptions, ca
 			rootMargin: rootMargin,
 			threshold: threshold || defaultThreshold
 		});
-		console.log({
-			root: effectRootElement,
-			rootMargin: rootMargin,
-			threshold: threshold || defaultThreshold
-		});
+		// console.log({
+		// 	root: effectRootElement,
+		// 	rootMargin: rootMargin,
+		// 	threshold: threshold || defaultThreshold
+		// });
 		observer.observe(targetElement, onChange);
 
 		return () => {
