@@ -1,6 +1,6 @@
 # root
-TODO.txt
-NOTES.txt
+TODO*.txt
+NOTES*.txt
 *-publish.txt
 
 node_modules

@@ -41,3 +41,4 @@ Good resources on learning about the 'proper' way to use `useEffect` and `useRef
 - [facebook/react issue #16956: Design decision: why do we need the stale closure problem in the first place?](https://github.com/facebook/react/issues/16956)
 - [Dan Abramov: Overreacted: Making setInterval Declarative with React Hooks](https://overreacted.io/making-setinterval-declarative-with-react-hooks/)
 - [Dan Abramov: Overreacted: A Complete Guide to useEffect](https://overreacted.io/a-complete-guide-to-useeffect/)
+- [Comment by Dan Abramov in facebook/react issue #14476: useCallback/useEffect support custom comparator](https://github.com/facebook/react/issues/14476#issuecomment-471199055)

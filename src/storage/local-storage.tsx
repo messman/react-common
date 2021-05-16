@@ -148,6 +148,9 @@ export type UseLocalStorageReturn<T> = [T, (value: T | undefined) => void];
  * If the migration function returns a modified value (comparison by reference), that value is saved back to LocalStorage.
  * Initial arguments are frozen for the life of the consuming component.
  * If the setter function is passed undefined, the original saved migration function is run again to determine the new value.
+ * @param key - The key in localstorage. Does not update after initial value.
+ * @param migration - Migration function. Does not update after initial value.
+ * @param version - Version. Does not update after initial value.
 */
 export function useLocalStorage<T>(key: string, migration: LocalStorageMigration<T>, version: string): UseLocalStorageReturn<T> {
 

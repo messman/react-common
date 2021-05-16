@@ -22,35 +22,33 @@ export const WindowDimensionsProvider: React.FC = (props: React.ComponentProps<a
 	});
 	const resizeMQL = React.useRef(window.matchMedia('(orientation: portrait)'));
 
-	function checkDimensions(): void {
-		const newWidth = document.documentElement.clientWidth;
-		const newHeight = document.documentElement.clientHeight;
-		setDimensions((p) => {
-			if (newWidth === p.width && newHeight === p.height) {
-				return p;
-			}
-			return {
-				width: newWidth,
-				height: newHeight,
-			};
-		});
-	}
-
 	React.useEffect(() => {
-		function handleChange() {
-			checkDimensions();
+
+		function checkDimensions(): void {
+			const newWidth = document.documentElement.clientWidth;
+			const newHeight = document.documentElement.clientHeight;
+			setDimensions((p) => {
+				if (newWidth === p.width && newHeight === p.height) {
+					return p;
+				}
+				return {
+					width: newWidth,
+					height: newHeight,
+				};
+			});
 		}
+
 		if (resizeMQL.current) {
-			addMediaEventListener(resizeMQL.current, handleChange);
+			addMediaEventListener(resizeMQL.current, checkDimensions);
 		}
-		window.addEventListener('resize', handleChange);
-		window.addEventListener('visibilitychange', handleChange);
+		window.addEventListener('resize', checkDimensions);
+		window.addEventListener('visibilitychange', checkDimensions);
 		return function () {
 			if (resizeMQL.current) {
-				removeMediaEventListener(resizeMQL.current, handleChange);
+				removeMediaEventListener(resizeMQL.current, checkDimensions);
 			}
-			window.removeEventListener('resize', handleChange);
-			window.removeEventListener('visibilitychange', handleChange);
+			window.removeEventListener('resize', checkDimensions);
+			window.removeEventListener('visibilitychange', checkDimensions);
 		};
 	}, []);
 

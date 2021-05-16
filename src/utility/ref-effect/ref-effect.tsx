@@ -30,7 +30,7 @@ export type RefEffectCallback = <T extends HTMLElement>(element: T) => CleanupRe
  * Runs cleanup as part of the effect, so you cannot rely on preservation of order of cleanup for effects in your logic.
  * Use only when cleanup is needed for an element; otherwise, use a regular ref.
  */
-export function useRefLayoutEffect<T extends HTMLElement>(effect: RefEffectCallback, deps?: React.DependencyList): React.RefObject<T | any> {
+export function useRefLayoutEffect<T extends HTMLElement>(effect: RefEffectCallback, deps: React.DependencyList): React.RefObject<T | any> {
 
 	const elementRef = React.useRef<T | null>(null);
 	const previousElementRef = React.useRef<T | null>(null);
@@ -86,7 +86,7 @@ export function useRefLayoutEffect<T extends HTMLElement>(effect: RefEffectCallb
  * Runs before any layout effects or regular effects, so it can't take advantage of any changes made by them.
  * Use only when cleanup is needed for an element; otherwise, use a regular ref.
  */
-export function useRefEffectCallback<T extends HTMLElement>(effect: RefEffectCallback, deps?: React.DependencyList): React.RefCallback<T> {
+export function useRefEffectCallback<T extends HTMLElement>(effect: RefEffectCallback, deps: React.DependencyList): React.RefCallback<T> {
 
 	// Our effect function is memoized here, only changing when outside dependencies change.
 	const memoizedCallback = React.useCallback(effect, deps || []);
@@ -124,7 +124,7 @@ export function useStateDOM<T extends HTMLElement>(): [React.RefObject<T | any>,
 		return () => {
 			setElement(null);
 		};
-	});
+	}, []);
 
 	return [ref, element];
 }

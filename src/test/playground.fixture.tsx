@@ -56,7 +56,7 @@ export default {
 			setRefOrders((p) => {
 				return [...p, `Outer Ref set (${canAccessInnerRef} access Inner Ref)`];
 			});
-		});
+		}, []);
 
 		const innerRef = useRefLayoutEffect(() => {
 			const canAccessOuterRef = !!outerRef.current ? 'can' : 'cannot';
@@ -64,7 +64,7 @@ export default {
 			setRefOrders((p) => {
 				return [...p, `Inner Ref set (${canAccessOuterRef} access Outer Ref)`];
 			});
-		});
+		}, []);
 
 		const outputText = refOrders.join(' | ');
 
@@ -91,7 +91,7 @@ export default {
 			setRefOrders((p) => {
 				return [...p, `Outer Ref set (${canAccessOuterToInnerRef} access Outer To Inner Ref, ${canAccessInnerRef} access Inner Ref)`];
 			});
-		});
+		}, []);
 
 		const outerToInnerRef = useRefLayoutEffect(() => {
 			const canAccessOuterRef = !!outerRef.current ? 'can' : 'cannot';
@@ -100,7 +100,7 @@ export default {
 			setRefOrders((p) => {
 				return [...p, `Outer To Inner Ref set (${canAccessOuterRef} access Outer Ref, ${canAccessInnerRef} access Inner Ref)`];
 			});
-		});
+		}, []);
 
 
 		function onInnerRefSet(element: HTMLElement) {
@@ -140,7 +140,7 @@ export default {
 			setRefOrders((p) => {
 				return [...p, `Outer Ref set (${canAccessOuterToInnerRef} access Outer To Inner Ref, ${canAccessInnerRef} access Inner Ref)`];
 			});
-		});
+		}, []);
 
 		const outerToInnerRefFunc = useRefEffectCallback((element) => {
 			outerToInnerRefProxy.current = element;
@@ -150,7 +150,7 @@ export default {
 			setRefOrders((p) => {
 				return [...p, `Outer To Inner Ref set (${canAccessOuterRef} access Outer Ref, ${canAccessInnerRef} access Inner Ref)`];
 			});
-		});
+		}, []);
 
 
 		function onInnerRefSet(element: HTMLElement) {
@@ -186,7 +186,7 @@ interface RefOrder2InnerProps {
 const RefOrder2Inner: React.FC<RefOrder2InnerProps> = (props) => {
 	const { outerToInnerRef, onInnerRefSet } = props;
 
-	const innerRef = useRefLayoutEffect(onInnerRefSet);
+	const innerRef = useRefLayoutEffect(onInnerRefSet, []);
 
 	return (
 		<div>
@@ -206,7 +206,7 @@ interface RefOrder3InnerProps {
 const RefOrder3Inner: React.FC<RefOrder3InnerProps> = (props) => {
 	const { outerToInnerRefFunc, onInnerRefSet } = props;
 
-	const innerRef = useRefLayoutEffect(onInnerRefSet);
+	const innerRef = useRefLayoutEffect(onInnerRefSet, []);
 
 	return (
 		<div>

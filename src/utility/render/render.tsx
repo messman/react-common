@@ -6,9 +6,11 @@ import * as React from 'react';
 	Essentially, treat your effects less like callbacks. 
 */
 /**
+ * Anti-pattern.
  * "Lifts" a value up to make the latest version always available to use in an effect.
  * Use sparingly to get out of complicated scenarios.
  * Uses useEffect, not useLayoutEffect.
+ * @param value - The value to keep. Triggers the effect.
  */
 export function useLatestForEffect<T>(value: T): React.MutableRefObject<T> {
 	const valueRef = React.useRef<T>(value);
@@ -21,6 +23,7 @@ export function useLatestForEffect<T>(value: T): React.MutableRefObject<T> {
 }
 
 /**
+ * Anti-pattern.
  * "Lifts" a value up to make the latest version always available to use in an effect.
  * Use sparingly to get out of complicated scenarios.
  * Uses useEffect, not useLayoutEffect.
@@ -40,6 +43,7 @@ export function useLatestForLayoutEffect<T>(value: T): React.MutableRefObject<T>
 	// https://stackoverflow.com/questions/53253940/make-react-useeffect-hook-not-run-on-initial-render
 */
 /**
+ * Anti-pattern.
  * An effect that will not run the first time - it only runs on dependency changes.
  * Use sparingly to get out of complicated scenarios.
  * Will not work with useLayoutEffect callbacks.

@@ -1,14 +1,13 @@
 {
 	"name": "@messman/react-common",
-	"version": "2.0.5",
+	"version": "2.1.0",
 	"description": "Common React utilities for use in projects.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"scripts": {
 		"build": "ts-webpack-builder",
 		"build-production": "ts-webpack-builder --isDevelopment=false",
-		"cosmos": "cosmos",
-		"storybook": "start-storybook --port=58888"
+		"cosmos": "cosmos"
 	},
 	"repository": {
 		"type": "git",
@@ -33,20 +32,20 @@
 		"styled-components": "^5.2.1"
 	},
 	"devDependencies": {
-		"@babel/core": "^7.13.10",
-		"@babel/preset-env": "^7.13.12",
-		"@babel/preset-react": "^7.12.13",
+		"@babel/core": "^7.14.2",
+		"@babel/preset-env": "^7.14.2",
+		"@babel/preset-react": "^7.13.13",
 		"@messman/ts-webpack-builder": "^2.1.0",
-		"@types/react": "^17.0.3",
-		"@types/react-dom": "^17.0.3",
+		"@types/react": "^17.0.5",
+		"@types/react-dom": "^17.0.5",
 		"@types/styled-components": "^5.1.9",
 		"babel-loader": "^8.2.2",
 		"html-webpack-plugin": "^5.3.1",
 		"react": "^17.0.2",
 		"react-cosmos": "^5.6.2",
 		"react-dom": "^17.0.2",
-		"styled-components": "^5.2.1",
-		"typescript": "^4.2.3",
-		"typescript-plugin-styled-components": "^1.4.4"
+		"styled-components": "^5.3.0",
+		"typescript": "^4.2.4",
+		"typescript-plugin-styled-components": "^1.5.0"
 	}
 }

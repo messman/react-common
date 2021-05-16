@@ -1,16 +1,11 @@
 import * as React from 'react';
 import { useLatestForEffect } from '@/utility/render/render';
 
-function internalUsePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>, callback: (data: T | null, error: Error | null) => void, restartOn?: any[]) {
-
-	/*
-		The callback could change every render, and we don't know when the promise will finish.
-		So for this special case, always hold the most recent version of the callback just to use at the end.
-	*/
-	const latestCallback = useLatestForEffect(callback);
-
-	restartOn = restartOn || [];
-
+/**
+ * Runs a promise.
+ * Any change to any inputs will re-run the promise - so memoize inputs as needed!
+ */
+export function usePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>, callback: (data: T | null, error: Error | null) => void) {
 	// This effect runs like a change callback. I could not find a way around it.
 	React.useEffect(() => {
 		if (!isRunning) {
@@ -21,12 +16,12 @@ function internalUsePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>
 		promiseFunc()
 			.then((resp: T) => {
 				if (!isCleanedUp) {
-					latestCallback.current(resp, null);
+					callback(resp, null);
 				}
 			})
 			.catch((err: Error) => {
 				if (!isCleanedUp) {
-					latestCallback.current(null, err);
+					callback(null, err);
 				}
 			});
 
@@ -35,7 +30,7 @@ function internalUsePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>
 			isCleanedUp = true;
 		};
 
-	}, [isRunning, promiseFunc, ...restartOn]);
+	}, [isRunning, promiseFunc, callback]);
 }
 
 /** Initial input to the Promise hook. */
@@ -81,8 +76,10 @@ export interface PromiseOutput<T> extends Omit<PromiseState<T>, 'promiseFunc'> {
  * Runs a promise function. Executes a callback when complete. The most recent callback from the most recent render is always used.
  * The callback, if supplied, returns a boolean indicating if the promise should run again. If not supplied, the promise will become idle.
  * Returns a function to use to reset the promise.
+ * @param initialInput - Locked - Changes will not change state
+ * @param callback - Live - Changes will not change state
 */
-export function usePromise<T>(initialInput: PromiseInitialInput<T>, callback?: (data: T | null, error: Error | null) => PromiseResetInput<T>): PromiseOutput<T> {
+export function usePromiseState<T>(initialInput: PromiseInitialInput<T>, callback?: (data: T | null, error: Error | null) => PromiseResetInput<T>): PromiseOutput<T> {
 
 	const [state, setState] = React.useState<PromiseState<T>>(() => {
 		return {
@@ -96,11 +93,13 @@ export function usePromise<T>(initialInput: PromiseInitialInput<T>, callback?: (
 
 	const { isStarted, promiseFunc, startedAt, data, error } = state;
 
-	internalUsePromise<T>(isStarted, promiseFunc, (data, error) => {
+	const savedCallback = useLatestForEffect(callback);
+
+	const promiseCallback = React.useCallback((data: T | null, error: Error | null) => {
 		let newIsStarted = false;
 		let newPromiseFunc: (() => Promise<T>) | undefined = undefined;
-		if (callback) {
-			const resetInput = callback(data, error);
+		if (savedCallback.current) {
+			const resetInput = savedCallback.current(data, error);
 			if (resetInput) {
 				newIsStarted = resetInput.isStarted;
 				newPromiseFunc = resetInput.promiseFunc;
@@ -117,7 +116,10 @@ export function usePromise<T>(initialInput: PromiseInitialInput<T>, callback?: (
 				startedAt: newIsStarted ? Date.now() : p.startedAt
 			};
 		});
+		// Trigger re-run on startedAt.
 	}, [startedAt]);
+
+	usePromise<T>(isStarted, promiseFunc, promiseCallback);
 
 	return React.useMemo<PromiseOutput<T>>(() => {
 

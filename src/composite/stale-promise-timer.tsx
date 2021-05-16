@@ -2,7 +2,7 @@ import * as React from 'react';
 
 // REQUIRED: must use relative paths here, since we are exporting types from other files.
 // If we used '@/...' here, it would show as '@/...' in the output .d.ts files.
-import { usePromise, PromiseOutput } from '../data/promise/promise';
+import { usePromiseState, PromiseOutput } from '../data/promise/promise';
 import { useTruthyTimer, TruthyTimerOutput } from '../lifecycle/timer/timer';
 
 /** Components used with the Stale Promise Timer. */
@@ -70,7 +70,7 @@ export function useStalePromiseTimer<T>(input: StalePromiseTimerInput<T>): Stale
 			isStarted: false
 		};
 	});
-	const promiseOutput = usePromise({
+	const promiseOutput = usePromiseState({
 		isStarted: isPromiseRunningInitially,
 		promiseFunc: promiseFunc
 	}, (data, error) => {

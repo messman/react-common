@@ -44,7 +44,7 @@ const lightTheme: Theme = {
 export const themes: Theme[] = [darkTheme, lightTheme];
 
 // For some reason, VS Code is not happy to colorize the CSS in this block when `createGlobalStyle` is used with a type.
-// Note: '#root' is for storybook
+// Note: '#root' is for testing
 // Note: overscroll-behavior comes from https://stackoverflow.com/a/50846937 to prevent macs going back (since we have horizontal scroll)
 export const GlobalStyles = createGlobalStyle<ThemeProps<Theme>>`
 	html {

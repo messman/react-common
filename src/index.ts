@@ -3,7 +3,7 @@ export { useStalePromiseTimer, StalePromiseTimerInput, StalePromiseTimerOutput, 
 
 // Data
 export { setClipboard } from './data/clipboard/clipboard';
-export { clampPromise, clampPromiseMaximumTimeoutReason, usePromise, PromiseInitialInput, PromiseOutput, PromiseResetInput, PromiseState, getDebugPromiseStatus } from './data/promise/promise';
+export { clampPromise, clampPromiseMaximumTimeoutReason, usePromise, usePromiseState, PromiseInitialInput, PromiseOutput, PromiseResetInput, PromiseState, getDebugPromiseStatus } from './data/promise/promise';
 
 // Debug
 export { useRenderCount, useRenderDebug } from './debug/render';

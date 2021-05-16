@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { clampPromise, usePromise, getDebugPromiseStatus } from './promise';
+import { clampPromise, usePromiseState, getDebugPromiseStatus } from './promise';
 import { seconds } from '@/utility/time/time';
 import { TestWrapper, useTestButtons } from '@/test/decorate';
 import { useValue } from 'react-cosmos/fixture';
@@ -23,7 +23,7 @@ export default () => {
 		return clampPromise(getTestInfo(actualSeconds), minimum, maximum);
 	}, [actualSeconds, minimum, maximum]);
 
-	const promiseOutput = usePromise({
+	const promiseOutput = usePromiseState({
 		isStarted: true,
 		promiseFunc: promiseFunc
 	}, (data, error) => {
