@@ -68,7 +68,7 @@ export function useElementScroll(throttle: number, callback?: (elementScroll: El
 
 		function updateState() {
 			throttleIdRef.current = -1;
-			if (isCleanedUp) {
+			if (isCleanedUp || !element.isConnected) {
 				return;
 			}
 			const { scrollLeft, scrollTop, scrollWidth, scrollHeight, clientHeight, clientWidth } = element;

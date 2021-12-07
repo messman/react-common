@@ -8,7 +8,7 @@ import { useLatestForEffect } from '@/utility/render/render';
 export function usePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>, callback: (data: T | null, error: Error | null) => void) {
 	// This effect runs like a change callback. I could not find a way around it.
 	React.useEffect(() => {
-		if (!isRunning) {
+		if (!isRunning || !promiseFunc || !callback) {
 			return;
 		}
 		let isCleanedUp = false;

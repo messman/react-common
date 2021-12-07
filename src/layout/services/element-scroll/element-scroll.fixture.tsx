@@ -4,33 +4,102 @@ import { Flex, FlexRoot } from '@/layout/ui/flex/flex';
 import { useElementScroll, ElementScroll } from './element-scroll';
 import { usePrevious } from '@/utility/previous/previous';
 import { useValue } from 'react-cosmos/fixture';
-import { TestWrapper } from '@/test/decorate';
+import { TestWrapper, wrap } from '@/test/decorate';
+import { useControlledElementSize } from '../element-size/element-size';
+import { useRenderCount } from '@/debug/render';
 
-export default () => {
+export default {
+	'Scroll Status': () => {
 
-	const [throttle] = useValue('Throttle', { defaultValue: 0 });
-	const [heightFactor] = useValue('Height Factor', { defaultValue: 3 });
+		const [throttle] = useValue('Throttle', { defaultValue: 0 });
+		const [heightFactor] = useValue('Height Factor', { defaultValue: 3 });
 
-	const [ref, elementScroll] = useElementScroll(throttle);
-	const previousElementScroll = usePrevious(elementScroll);
+		const [ref, elementScroll] = useElementScroll(throttle);
+		const previousElementScroll = usePrevious(elementScroll);
 
-	return (
-		<TestWrapper>
-			<FlexRoot flexDirection='column'>
-				<p><strong>{getElementScrollStatus(elementScroll)}</strong></p>
-				<p><em>Previous: {getElementScrollStatus(previousElementScroll || null)}</em></p>
-				<FlexContainer ref={ref}>
+		return (
+			<TestWrapper>
+				<FlexRoot flexDirection='column'>
+					<p><strong>{getElementScrollStatus(elementScroll)}</strong></p>
+					<p><em>Previous: {getElementScrollStatus(previousElementScroll || null)}</em></p>
+					<FlexContainer ref={ref}>
 
-					<Scroller heightFactor={heightFactor}>
-						<p>Top!</p>
-						<Flex />
-						<p>Bottom!</p>
-					</Scroller>
-				</FlexContainer>
-			</FlexRoot>
-		</TestWrapper>
-	);
+						<Scroller heightFactor={heightFactor}>
+							<p>Top!</p>
+							<Flex />
+							<p>Bottom!</p>
+						</Scroller>
+					</FlexContainer>
+				</FlexRoot>
+			</TestWrapper>
+		);
+	},
+	'Is Scrolling (Scroll)': wrap(() => {
+		/*
+			This doesn't work, because you need scroll information from both the container
+			and the child.
+		*/
+		const [throttle] = useValue('Throttle', { defaultValue: 0 });
+		const [isScrollable] = useValue('Is Scrollable', { defaultValue: false });
+
+		const [elementScrollRef, elementScroll] = useElementScroll(throttle);
+		const { height, scrollTopMax } = elementScroll;
+		const scrollInfoString = `height: ${height} | scrollTopMax: ${scrollTopMax}`;
+		const isScrolling = scrollTopMax > 0;
+
+		return (
+			<ScrollContainer>
+				<ScrollingChild ref={elementScrollRef} isScrollable={isScrollable}>
+					<p>Is Scrollable: {isScrollable.toString()}</p>
+					<p>Scrolling Info: {scrollInfoString}</p>
+					<p>Is Scrolling: {isScrolling.toString()}</p>
+				</ScrollingChild>
+			</ScrollContainer>
+		);
+	}),
+	'Is Scrolling (Size)': wrap(() => {
+		const [throttle] = useValue('Throttle', { defaultValue: 0 });
+		const [isScrollable] = useValue('Is Scrollable', { defaultValue: false });
+
+		const renderCount = useRenderCount('Scrolling By Size');
+		const [parentSizeRef, parentSize] = useControlledElementSize(throttle);
+		const [childSizeRef, childSize] = useControlledElementSize(throttle);
+
+		const isScrolling = childSize.height > parentSize.height;
+
+
+		return (
+			<ScrollContainer ref={parentSizeRef}>
+				<ScrollingChild ref={childSizeRef} isScrollable={isScrollable}>
+					<p>Is Scrollable: {isScrollable.toString()}</p>
+					<p>Is Scrolling: {isScrolling.toString()}</p>
+					<p>Render Count: {renderCount.toString()}</p>
+				</ScrollingChild>
+			</ScrollContainer>
+		);
+	})
 };
+
+const scrollContainerHeight = 50;
+const scrollChildHeight = 40;
+const scrollChildScrollingHeight = 60;
+
+const ScrollContainer = styled.div`
+	height: ${scrollContainerHeight}rem;
+	overflow: auto;
+	border: 1px solid red;
+`;
+
+interface ScrollingChildProps {
+	isScrollable: boolean;
+}
+
+const ScrollingChild = styled.div<ScrollingChildProps>`
+	height: ${p => p.isScrollable ? scrollChildScrollingHeight : scrollChildHeight}rem;
+	background-color: skyblue;
+	color: black;
+	overflow: auto;
+`;
 
 function getElementScrollStatus(elementScroll: ElementScroll | null): string {
 	if (!elementScroll) {

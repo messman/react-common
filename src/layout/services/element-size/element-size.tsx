@@ -57,7 +57,7 @@ export function useElementSize(throttle: number, callback: (width: number, heigh
 
 		function onChange() {
 			throttleIdRef.current = -1;
-			if (!isCleanedUp) {
+			if (!isCleanedUp && element.isConnected) {
 				latestCallback.current(element.clientWidth, element.clientHeight, element);
 			}
 		}
