@@ -3,7 +3,8 @@
 		"./src"
 	],
 	"webpack": {
-		"configPath": "./cosmos.webpack.config.js"
+		"configPath": "./cosmos.webpack.config.js",
+		"reloadOnFail": false
 	},
 	"ui": {
 		"responsivePreview": {

@@ -79,7 +79,7 @@ export function useElementIntersect(observerOptions: ElementIntersectOptions, ca
 		let isCleanedUp = false;
 
 		function onChange(entry: IntersectionObserverEntry) {
-			if (!isCleanedUp) {
+			if (!isCleanedUp && targetElement.isConnected) {
 				latestCallback.current(createElementIntersect(entry));
 			}
 		}
