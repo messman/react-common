@@ -16,7 +16,7 @@ export { WindowDimensions, WindowDimensionsProvider, useWindowDimensions } from 
 export { DefaultLayoutBreakpoint, LayoutOrientation, WindowLayout, defaultLowerBreakpoints } from './layout/services/window-layout/window-layout';
 export { WindowPixelLayoutProvider, WindowPixelLayoutProviderProps, useWindowPixelLayout } from './layout/services/window-layout/window-layout-pixel';
 export { WindowMediaLayoutProvider, WindowMediaLayoutProviderProps, useWindowMediaLayout } from './layout/services/window-layout/window-layout-media';
-export { Flex, FlexColumn, FlexParent, FlexProps, FlexRoot, FlexRow } from './layout/ui/flex/flex';
+export { Flex, FlexColumn, FlexParent, FlexProps, FlexParentProps, FlexRoot, FlexRow } from './layout/ui/flex/flex';
 export { Overlay, OverlayProps } from './layout/ui/overlay/overlay';
 export { Sticky, StickyInput, StickyOutput, StickyProps, useSticky } from './layout/ui/sticky/sticky';
 

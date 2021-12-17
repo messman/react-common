@@ -5,10 +5,10 @@ import { useLatestForEffect } from '@/utility/render/render';
  * Runs a promise.
  * Any change to any inputs will re-run the promise - so memoize inputs as needed!
  */
-export function usePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>, callback: (data: T | null, error: Error | null) => void) {
-	// This effect runs like a change callback. I could not find a way around it.
+export function usePromise<T>(promiseFunc: (() => Promise<T>) | null, callback: ((data: T | null, error: Error | null) => void) | null) {
+	// TODO: This effect runs like a change callback. I could not find a way around it.
 	React.useEffect(() => {
-		if (!isRunning || !promiseFunc || !callback) {
+		if (!promiseFunc || !callback) {
 			return;
 		}
 		let isCleanedUp = false;
@@ -30,7 +30,7 @@ export function usePromise<T>(isRunning: boolean, promiseFunc: () => Promise<T>,
 			isCleanedUp = true;
 		};
 
-	}, [isRunning, promiseFunc, callback]);
+	}, [promiseFunc, callback]);
 }
 
 /** Initial input to the Promise hook. */
@@ -119,7 +119,7 @@ export function usePromiseState<T>(initialInput: PromiseInitialInput<T>, callbac
 		// Trigger re-run on startedAt.
 	}, [startedAt]);
 
-	usePromise<T>(isStarted, promiseFunc, promiseCallback);
+	usePromise<T>(isStarted ? promiseFunc : null, promiseCallback);
 
 	return React.useMemo<PromiseOutput<T>>(() => {
 

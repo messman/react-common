@@ -6,51 +6,109 @@ import { usePrevious } from '@/utility/previous/previous';
 import { useValue } from 'react-cosmos/fixture';
 import { TestWrapper } from '@/test/decorate';
 
-export default () => {
+export default {
+	'Intersect Info': () => {
 
-	const [rootMargin] = useValue('Root Margin', { defaultValue: '0%' });
-	const [thresholdSections] = useValue('Threshold Sections', { defaultValue: 0 });
-	const [useRootElement] = useValue('Use Root Element', { defaultValue: true });
+		const [rootMargin] = useValue('Root Margin', { defaultValue: '0%' });
+		const [thresholdSections] = useValue('Threshold Sections', { defaultValue: 0 });
+		const [useRootElement] = useValue('Use Root Element', { defaultValue: true });
 
-	const threshold = React.useMemo(() => {
-		return createThreshold(thresholdSections);
-	}, [thresholdSections]);
+		const threshold = React.useMemo(() => {
+			return createThreshold(thresholdSections);
+		}, [thresholdSections]);
 
-	const rootRef = React.useRef<any>(null!);
-	const intersectOptions = React.useMemo<ElementIntersectOptions>(() => {
-		return {
-			rootRef: rootRef,
-			rootMargin: rootMargin,
-			threshold: threshold
-		};
-	}, [rootMargin, threshold, useRootElement]);
-	console.log('Options', intersectOptions);
+		const rootRef = React.useRef<any>(null!);
+		const intersectOptions = React.useMemo<ElementIntersectOptions>(() => {
+			return {
+				rootRef: rootRef,
+				rootMargin: rootMargin,
+				threshold: threshold
+			};
+		}, [rootMargin, threshold, useRootElement]);
+		console.log('Options', intersectOptions);
 
-	const [targetRef, elementIntersect] = useControlledElementIntersect(intersectOptions, (_) => {
-		console.log('Intersect', elementIntersect);
-	});
-	const previousElementIntersect = usePrevious(elementIntersect);
+		const [targetRef, elementIntersect] = useControlledElementIntersect(intersectOptions, (_) => {
+			console.log('Intersect', elementIntersect);
+		});
+		const previousElementIntersect = usePrevious(elementIntersect);
 
-	return (
-		<TestWrapper>
-			<FlexRoot flexDirection='column'>
-				<p>{JSON.stringify(threshold)}</p>
-				<ElementIntersectStatus intersect={elementIntersect} />
-				<hr />
-				<em><ElementIntersectStatus intersect={previousElementIntersect} /></em>
-				<FlexContainer ref={rootRef}>
-					<Scroller>
-						<Flex />
-						<Target ref={targetRef}>
-							<p>Top!</p>
-						</Target>
-						<Flex />
-					</Scroller>
-				</FlexContainer>
-			</FlexRoot>
-		</TestWrapper>
-	);
+		return (
+			<TestWrapper>
+				<FlexRoot flexDirection='column'>
+					<p>{JSON.stringify(threshold)}</p>
+					<ElementIntersectStatus intersect={elementIntersect} />
+					<hr />
+					<em><ElementIntersectStatus intersect={previousElementIntersect} /></em>
+					<FlexContainer ref={rootRef}>
+						<Scroller>
+							<Flex />
+							<Target ref={targetRef}>
+								<p>Top!</p>
+							</Target>
+							<Flex />
+						</Scroller>
+					</FlexContainer>
+				</FlexRoot>
+			</TestWrapper>
+		);
+	},
+	'Scrollbar Check': () => {
+		const [sizePercent] = useValue('Size Percent', { defaultValue: 95 });
+		const [rootMargin] = useValue('Root Margin', { defaultValue: '0%' });
+		const [thresholdSections] = useValue('Threshold Sections', { defaultValue: 0 });
+
+		const threshold = React.useMemo(() => {
+			return createThreshold(thresholdSections);
+		}, [thresholdSections]);
+
+		const rootRef = React.useRef<any>(null!);
+		const intersectOptions = React.useMemo<ElementIntersectOptions>(() => {
+			return {
+				rootRef: rootRef,
+				rootMargin: rootMargin,
+				threshold: threshold
+			};
+		}, [rootMargin, threshold]);
+
+		const [targetRef, elementIntersect] = useControlledElementIntersect(intersectOptions, (_) => {
+			console.log('Intersect', _);
+		});
+
+		const isScrolling = !!elementIntersect && elementIntersect.intersectionRatio < 1;
+
+		return (
+			<TestWrapper>
+				<FlexRoot flexDirection='column'>
+					<ScrollContainer ref={rootRef}>
+						<ScrollingChild ref={targetRef} sizePercent={sizePercent}>
+							<p>Size Percent: {sizePercent.toString()}</p>
+							<p>Is Scrolling: {isScrolling.toString()}</p>
+						</ScrollingChild>
+					</ScrollContainer>
+				</FlexRoot>
+			</TestWrapper>
+		);
+	}
 };
+
+const scrollContainerHeight = 30;
+
+const ScrollContainer = styled.div`
+	height: ${scrollContainerHeight}rem;
+	overflow: auto;
+	border: 1px solid red;
+`;
+
+interface ScrollingChildProps {
+	sizePercent: number;
+}
+
+const ScrollingChild = styled.div<ScrollingChildProps>`
+	height: ${p => Math.round((p.sizePercent / 100) * scrollContainerHeight)}rem;
+	background-color: skyblue;
+	color: black;
+	overflow: auto;
+`;
 
 interface ElementIntersectStatusProps {
 	intersect: ElementIntersect | null | undefined;

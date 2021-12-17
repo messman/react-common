@@ -38,18 +38,19 @@ export default {
 		/*
 			This doesn't work, because you need scroll information from both the container
 			and the child.
+			Putting the scroll ref on the container lets you know the height of the area 
 		*/
 		const [throttle] = useValue('Throttle', { defaultValue: 0 });
 		const [isScrollable] = useValue('Is Scrollable', { defaultValue: false });
 
 		const [elementScrollRef, elementScroll] = useElementScroll(throttle);
-		const { height, scrollTopMax } = elementScroll;
-		const scrollInfoString = `height: ${height} | scrollTopMax: ${scrollTopMax}`;
+		const { height, scrollTop, scrollTopMax } = elementScroll;
+		const scrollInfoString = `height: ${height} | scrollTop: ${scrollTop} | scrollTopMax: ${scrollTopMax}`;
 		const isScrolling = scrollTopMax > 0;
 
 		return (
-			<ScrollContainer>
-				<ScrollingChild ref={elementScrollRef} isScrollable={isScrollable}>
+			<ScrollContainer ref={elementScrollRef}>
+				<ScrollingChild isScrollable={isScrollable}>
 					<p>Is Scrollable: {isScrollable.toString()}</p>
 					<p>Scrolling Info: {scrollInfoString}</p>
 					<p>Is Scrolling: {isScrolling.toString()}</p>

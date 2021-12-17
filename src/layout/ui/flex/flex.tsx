@@ -42,7 +42,7 @@ Flex.defaultProps = {
 	flex: 1
 };
 
-interface FlexParentProps extends FlexProps {
+export interface FlexParentProps extends FlexProps {
 	/**
 	 * Default: row
 	 */
