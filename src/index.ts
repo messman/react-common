@@ -31,6 +31,6 @@ export { LocalStorageItem, LocalStorageMigration, LocalStorageNamespace, UseLoca
 export { createContextConsumer } from './utility/context/context';
 export { usePrevious } from './utility/previous/previous';
 export { useRefEffectCallback, RefEffectCallback, useRefLayoutEffect, useStateDOM } from './utility/ref-effect/ref-effect';
-export { useChangeEffect, useLatestForEffect, useLatestForLayoutEffect } from './utility/render/render';
+export { useChangeEffect, useLatestForEffect, useLatestForLayoutEffect, useEventCallback } from './utility/render/render';
 export { hours, minutes, seconds } from './utility/time/time';
 export { getUnique, useUnique } from './utility/unique/unique';
