@@ -11,12 +11,9 @@ export default {
 		const timeoutRef = React.useRef(-1);
 
 		React.useEffect(() => {
-			if (count > 5000) {
-				return;
-			}
 			let id = window.setInterval(() => {
 				setCount((p) => {
-					return p + 1;
+					return p < 100 ? p + 1 : p;
 				});
 			}, 1000);
 			return () => {
@@ -46,12 +43,6 @@ export default {
 				}, 2500);
 			}
 		});
-
-		if (count === 5000) {
-			return (
-				<TestWrapper>Restart</TestWrapper>
-			);
-		}
 
 		return (
 			<TestWrapper>

@@ -61,7 +61,7 @@ export function useChangeEffect(effect: React.EffectCallback, deps?: React.Depen
 }
 
 /**
- * Returns a function that can be used to trigger hidden state, causing the component to run again.
+ * Returns a (never-changing) function that can be used to trigger hidden state, causing the component to run again.
  * The provided callback will be called in an effect after this render, and thus will always
  * have the most updated state and props (unless memoized).
  * 
@@ -72,6 +72,7 @@ export function useEventCallback<T>(callback: (data: T) => void): (data: T) => v
 	// Use a queue, in case multiple callbacks are scheduled in a single phase.
 	const [queue, setQueue] = React.useState<T[]>([]);
 
+	// This effect will pretty much run every time if the callback does, but that's okay. It's safe.
 	React.useEffect(() => {
 		// This is essentially our 'key' to indicate whether the code below should run.
 		if (queue.length === 0) {
@@ -83,9 +84,9 @@ export function useEventCallback<T>(callback: (data: T) => void): (data: T) => v
 		setQueue([]);
 	}, [queue, callback]);
 
-	return function (data) {
+	return React.useCallback((data) => {
 		setQueue((q) => {
 			return [...q, data];
 		});
-	};
+	}, []);
 }
