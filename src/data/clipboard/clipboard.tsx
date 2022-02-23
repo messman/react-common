@@ -4,29 +4,40 @@
 	
 	MDN: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText
 	There is upcoming new functionality for this in the form of the async 'writeText' and permissions API.
-	But since not all browsers support it, we have to fall back on the crap implementations.
+	In 2020, support was scant; in 2022, it's much better.
+	In 2022 we changed this code to use writeText first instead of the document.execCommand fallback.
 
-	There are implementations out there, but most are either too complicated or not complicated enough.
 	This code only writes to the clipboard. It does not try to read from the clipboard at all.
 
 	Test this in Firefox, iOS Safari, Desktop Safari, and Chrome.
 */
 
-/** Sets the clipboard using document.execCopy. Does not read from the clipboard. */
-export async function setClipboard(text: string | string[]): Promise<void> {
+/**
+ * Sets the clipboard. Does not read from the clipboard.
+ * 
+ * Uses `clipboard.writeText` (https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText),
+ * and falls back on `document.execCommand('copy')`.
+ * 
+ * Should work in all major browsers.
+ * See https://caniuse.com/?search=writetext
+ */
+export async function setClipboard(text: string | string[]): Promise<boolean> {
 	const textLines = Array.isArray(text) ? text : [text];
 
-	let isSuccess = tryExecCopy(textLines);
-	if (!isSuccess) {
-		console.warn('Failure to copy to clipboard via exec copy command.');
-
-		if (!!window.navigator && !!window.navigator.clipboard) {
+	if (!!window.navigator && !!window.navigator.clipboard) {
+		try {
 			await navigator.clipboard.writeText(textLines.join('\n'));
+			return true;
 		}
-		else {
-			throw new Error('Copy to clipboard failed');
+		catch {
+			console.warn('Failure to copy to clipboard via clipboard.writeText');
 		}
 	}
+	if (!tryExecCopy(textLines)) {
+		console.error('Failure to copy to clipboard via exec copy command.');
+		return false;
+	}
+	return true;
 }
 
 function tryExecCopy(textLines: string[]): boolean {
@@ -55,7 +66,10 @@ function tryExecCopy(textLines: string[]): boolean {
 
 	textarea.value = textLines.join('\n');
 	textarea.select();
-	const isSuccess = document.execCommand('copy');
+	let isSuccess = false;
+	if (document.execCommand) {
+		isSuccess = document.execCommand('copy');
+	}
 	textarea.parentNode!.removeChild(textarea);
 
 	return isSuccess;
