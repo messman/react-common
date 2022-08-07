@@ -13,6 +13,7 @@ export interface WindowMediaLayoutProviderProps {
 	 * */
 	lowerBreakpoints: number[];
 	breakpointUnit: 'px' | 'rem';
+	children?: React.ReactNode;
 }
 
 type MediaQueryListTuple = [MediaQueryList, MediaQueryList];

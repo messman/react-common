@@ -94,7 +94,7 @@ export function useRefEffectCallback<T extends HTMLElement>(effect: RefEffectCal
 	// This ref does double-duty as the way to tell when we are cleaning up as well as holding that cleanup function.
 	const cleanupRef = React.useRef<CleanupRefFunc>(null);
 
-	const callback = React.useCallback((element) => {
+	const callback = React.useCallback((element: T) => {
 		// If we have the cleanup ref set, we are cleaning up. So run it.
 		if (cleanupRef.current) {
 			cleanupRef.current();

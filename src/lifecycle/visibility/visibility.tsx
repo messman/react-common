@@ -6,6 +6,7 @@ export const useDocumentVisibility = () => React.useContext(DocumentVisibilityCo
 export interface DocumentVisibilityProviderProps {
 	/** If true, provider is forced into the hidden state. */
 	testForceHidden?: boolean;
+	children?: React.ReactNode;
 }
 
 /** Provides access to the document hidden state or a test value that mocks the hidden state. */

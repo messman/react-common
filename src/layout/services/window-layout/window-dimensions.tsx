@@ -15,7 +15,7 @@ export interface WindowDimensions {
 */
 
 const WindowDimensionsContext = React.createContext<WindowDimensions>(null!);
-export const WindowDimensionsProvider: React.FC = (props: React.ComponentProps<any>) => {
+export const WindowDimensionsProvider: React.FC<React.PropsWithChildren> = (props) => {
 	const [dimensions, setDimensions] = React.useState<WindowDimensions>({
 		width: document.documentElement.clientWidth,
 		height: document.documentElement.clientHeight,

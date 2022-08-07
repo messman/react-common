@@ -37,6 +37,7 @@ export interface WindowPixelLayoutProviderProps {
 	 * Example: [0, 500, 1200] creates ranges [0, 500) and [500, 1200) and [1200, ...]
 	 * */
 	lowerBreakpoints: number[];
+	children?: React.ReactNode;
 }
 
 export const WindowPixelLayoutProvider: React.FC<WindowPixelLayoutProviderProps> = (props) => {

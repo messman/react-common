@@ -19,7 +19,7 @@ themes.forEach((theme, index) => {
 	themeOptions[theme.name] = index;
 });
 
-export const TestWrapper: React.FC = (props) => {
+export const TestWrapper: React.FC<React.PropsWithChildren> = (props) => {
 
 	const localStorageThemeProvider = useLocalStorageThemeProvider();
 	const [themeIndex, setThemeIndex] = localStorageThemeProvider;

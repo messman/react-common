@@ -8,6 +8,7 @@ export interface OverlayProps {
 	backdropOpacity?: number;
 	backdropColor: string;
 	onBackdropClick?: (() => void) | null;
+	children?: React.ReactNode;
 }
 
 export const Overlay: React.FC<OverlayProps> = (props) => {

@@ -83,6 +83,7 @@ export const useLocalStorageThemeProvider = () => {
 
 export interface LocalStorageThemeProviderProps {
 	value: UseLocalStorageReturn<number>;
+	children?: React.ReactNode;
 }
 
 export const LocalStorageThemeProvider: React.FC<LocalStorageThemeProviderProps> = (props) => {
